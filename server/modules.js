@@ -1,6 +1,6 @@
 // Modul-Registry. Jedes Modul ist ein Ordner server/modules/<id>/ mit einer index.js, die exportiert:
 //
-//   export const manifest = { id, name, description, icon, roles: [{ id, label, help }], url? };
+//   export const manifest = { id, name, description, icon, roles: [{ id, label, help }], url?, order? };
 //   export function register(api) { ... }   // optional: eigene API unter /api/m/<id>/…
 //   manifest.path = '/rundown/'              // optional: Adresse einer vom Modul ausgelieferten Seite (statt url)
 //
@@ -26,6 +26,8 @@ for (const name of fs.readdirSync(dir).sort()) {
   if (!Array.isArray(m.roles) || !m.roles.length || m.roles.some((r) => !r?.id || !r?.label)) throw new Error(`Modul „${name}“: roles fehlt oder ist ungültig`);
   modules.push({ manifest: m, register: mod.register || null });
 }
+// Reihenfolge der Kacheln: manifest.order (kleiner = weiter vorn), sonst alphabetisch
+modules.sort((a, b) => (a.manifest.order ?? 100) - (b.manifest.order ?? 100) || a.manifest.name.localeCompare(b.manifest.name, 'de'));
 
 export const moduleById = (id) => modules.find((m) => m.manifest.id === id)?.manifest || null;
 export const roleIds = (id) => moduleById(id)?.roles.map((r) => r.id) || [];
