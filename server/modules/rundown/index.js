@@ -8,6 +8,7 @@ export const manifest = {
   id: 'rundown',
   name: 'FF Rundown',
   description: 'Ablaufplan und Live-Steuerung für Shows und Events.',
+  order: 10, // Position der Kachel
   icon: 'list',
   roles: [
     { id: 'viewer', label: 'Viewer', help: 'Rundowns ansehen' },

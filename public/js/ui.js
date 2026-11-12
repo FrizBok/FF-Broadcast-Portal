@@ -50,6 +50,7 @@ const ICONS = {
   list: '<path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13"/>',
   headset: '<path d="M4.5 13.5V12a7.5 7.5 0 0 1 15 0v1.5"/><rect x="2.8" y="12.5" width="4.4" height="7" rx="1.8"/><rect x="16.8" y="12.5" width="4.4" height="7" rx="1.8"/><path d="M19 19.5c0 1.6-2.2 2.3-5.5 2.3H12"/>',
   regie: '<rect x="2" y="3" width="20" height="13.5" rx="2.2"/><path d="M12 3v13.5M2 9.75h20M8 21h8M12 16.5V21"/>',
+  layers: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
   stack: '<rect x="5" y="2" width="14" height="3.6" rx="1.3"/><rect x="2" y="8" width="20" height="8" rx="2.2"/><rect x="5" y="18.4" width="14" height="3.6" rx="1.3"/>',
   monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/>',
   maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',

@@ -8,6 +8,7 @@ export const manifest = {
   name: 'Beispiel',
   description: 'Kurzbeschreibung für die Kachel',
   icon: 'stack',                  // Icon-Name aus public/js/ui.js
+  order: 30,                      // Position der Kachel (kleiner = weiter vorn, Standard 100)
   roles: [                        // aufsteigend: letzte Rolle = höchste
     { id: 'viewer', label: 'Zuschauer', help: 'Darf ansehen' },
     { id: 'admin',  label: 'Beispiel-Admin', help: 'Darf alles im Modul' },
@@ -26,5 +27,5 @@ export function register(api) {
 Regeln:
 - `api.get/post/put/patch/del` verlangen automatisch eine Anmeldung; `api.requireRole(min)` prüft die Modul-Rolle (`req.user`).
 - Plattform-Admins haben automatisch die höchste Rolle jedes Moduls. Wer keinen Eintrag hat, sieht das Modul nicht.
-- Ohne `url`/`path` zeigt die Kachel „Bald“.
+- Ohne `url`/`path` zeigt die Kachel „Bald“ (z. B. `url: process.env.OVERLAY_URL || ''`).
 - Daten des Moduls gehören in `api.DATA_DIR` (eigene Datei oder eigene Tabellen mit Präfix `<id>_`).
