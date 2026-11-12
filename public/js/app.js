@@ -13,7 +13,7 @@ export const roleClass = (u) => u.owner ? 'role-owner' : u.role === 'admin' ? 'r
 
 /* ------------------------------------------------------------ Bausteine */
 const brand = () => h('div', { class: 'brand' },
-  h('span', { class: 'brand-mark' }, icon('radio')),
+  h('span', { class: 'brand-mark' }, icon('logo')),
   h('span', { class: 'brand-name' }, h('b', null, 'Frankenfinals'), h('span', null, 'Broadcast')));
 
 const field = (label, input, hint) => h('label', { class: 'field' }, h('span', null, label), input, hint ? h('small', { class: 'hint' }, hint) : null);

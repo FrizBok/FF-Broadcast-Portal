@@ -414,3 +414,9 @@ a.mod-card:hover .mod-go { color: var(--accent-2); transform: translateX(3px); }
 .user-btn-txt span { color: var(--accent-2); }
 .nav a .dot { margin-left: 2px; }
 .version { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; }
+.auth-card .brand { flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.auth-card .brand-mark { width: 64px; height: 64px; border-radius: 18px; }
+.auth-card .brand-mark .ico { width: 36px; height: 36px; }
+.auth-card .brand-name { align-items: center; }
+.auth-card .brand-name b { font-size: 26px; }
+.auth-card .brand-name span { font-size: 12px; }
