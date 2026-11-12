@@ -51,7 +51,7 @@ async function mailTab(ctx, body) {
 async function securityTab(ctx, body) {
   const s = await get('/api/system/security');
   const owner = S.user.owner;
-  const sw = h('input', { type: 'checkbox', checked: s.twofa_policy === 'required', disabled: !owner });
+  const sw = h('input', { type: 'checkbox', checked: s.twofa_policy === 'required', disabled: !owner || (!S.user.totp_enabled && s.twofa_policy !== 'required') });
   sw.addEventListener('change', async () => {
     try { await put('/api/system/security', { twofa_policy: sw.checked ? 'required' : 'optional' }); toast('Gespeichert', 'ok'); securityTab(ctx, body); }
     catch (e) { sw.checked = !sw.checked; toast(e.message, 'err'); }
@@ -60,12 +60,25 @@ async function securityTab(ctx, body) {
     h('h3', null, 'Zwei-Faktor-Anmeldung'),
     h('div', { class: 'setting-row' },
       h('div', { class: 'txt' }, h('b', null, '2FA für alle verpflichtend'),
-        h('span', { class: 'hint' }, 'Ist die Pflicht aus, entscheidet jeder selbst. Ist sie an, müssen alle 2FA einrichten und können sie nicht abschalten.' + (owner ? '' : ' Das ändert nur der Super-Admin.'))),
+        h('span', { class: 'hint' }, 'Ist die Pflicht aus, entscheidet jeder selbst. Ist sie an, müssen alle 2FA einrichten und können sie nicht abschalten.' + (owner ? '' : ' Das ändert nur der Super-Admin.')),
+        owner && !S.user.totp_enabled && s.twofa_policy !== 'required' ? h('div', { class: 'hint warn', style: { marginTop: '6px' } }, 'Richte zuerst selbst 2FA ein (', h('a', { href: '#/konto', style: { color: 'inherit', textDecoration: 'underline' } }, 'Mein Konto'), '), dann lässt sich die Pflicht einschalten.') : null),
       h('label', { class: 'switch' }, sw)),
     h('p', { class: 'hint' }, `${s.users_with_2fa} von ${s.users_active} aktiven Konten nutzen 2FA.`)));
 }
 
 const KIND = { setup: 'Einrichtung', login: 'Anmeldung', login_fail: 'Anmeldung fehlgeschlagen', login_2fa_fail: '2FA-Code falsch', forgot: 'Passwort vergessen', reset_used: 'Passwort zurückgesetzt', invite_accepted: 'Einladung angenommen', twofa_enabled: '2FA eingeschaltet', twofa_disabled: '2FA ausgeschaltet', twofa_reset: '2FA zurückgesetzt', recovery_used: 'Wiederherstellungs-Code benutzt', recovery_new: 'Neue Wiederherstellungs-Codes', user_created: 'Konto angelegt', user_invited: 'Konto eingeladen', user_deleted: 'Konto gelöscht', user_updated: 'Konto geändert', module_access: 'Modul-Rechte geändert', password_self: 'Passwort geändert', password_admin: 'Passwort gesetzt (Admin)', reset_link: 'Link erzeugt', owner: 'Super-Admin übertragen', mail_sent: 'Mail gesendet', mail_failed: 'Mail fehlgeschlagen', backup_manual: 'Backup erstellt', backup_delete: 'Backup gelöscht', backup_failed: 'Backup fehlgeschlagen', mail_settings: 'Mail-Einstellungen', policy_changed: '2FA-Regel geändert' };
+
+const DL = { ua: 'Gerät', known: 'Konto bekannt', reason: 'Grund', kind: 'Art', role: 'Rolle', active: 'Aktiv', modules: 'Module', before: 'Vorher', after: 'Nachher', hours: 'Gültig (Std.)', mailed: 'Per Mail', recipients: 'Empfänger', mail: 'Per Mail', members: 'Mitglieder', twofa_policy: '2FA-Regel', subject: 'Betreff', error: 'Fehler', left: 'Codes übrig', host: 'Server', port: 'Port', user: 'Benutzer', from: 'Absender', app_url: 'App-Adresse', expires_at: 'Ablauf', name: 'Name', email: 'E-Mail', initial: 'Erstes Passwort', recovery: 'Wiederherstellungs-Code', twofa: '2FA', tpl: 'Vorlage', secure: 'Verschlüsselung' };
+const DV = { member: 'Mitglied', guest: 'Gast', admin: 'Admin', user: 'Mitglied', required: 'Pflicht', optional: 'freiwillig' };
+function fmtVal(k, v) {
+  if (v === true || v === 1) return k === 'active' ? 'ja' : 'ja';
+  if (v === false || v === 0) return 'nein';
+  if (v == null || v === '') return '–';
+  if (k === 'expires_at' && typeof v === 'number') return new Date(v).toLocaleDateString('de-DE');
+  if (typeof v === 'object') { const e = Object.entries(v); return e.length ? e.map(([a, b]) => `${a}: ${b}`).join(', ') : 'keine'; }
+  return DV[v] || String(v);
+}
+const fmtDetail = (d) => Object.entries(d).filter(([, v]) => v !== undefined).map(([k, v]) => `${DL[k] || k}: ${fmtVal(k, v)}`).join(' · ');
 
 async function logTab(ctx, body) {
   let cat = '', q = '';
@@ -74,7 +87,7 @@ async function logTab(ctx, body) {
   const load = async (append) => {
     const r = await get(`/api/system/audit?cat=${cat}&q=${encodeURIComponent(q)}${append && last ? '&before=' + last : ''}`);
     const rows = r.entries.map((e) => h('tr', { class: e.ok ? '' : 'bad' }, h('td', { class: 't' }, fmtDateTime(e.at)),
-      h('td', null, KIND[e.kind] || e.kind, e.detail && Object.keys(e.detail).length ? h('small', null, JSON.stringify(e.detail).slice(0, 160)) : null),
+      h('td', null, KIND[e.kind] || e.kind, e.detail && Object.keys(e.detail).length ? h('small', null, fmtDetail(e.detail).slice(0, 200)) : null),
       h('td', null, e.actor || '–', e.target ? h('small', null, '→ ' + e.target) : null), h('td', { class: 't' }, e.ip || '')));
     if (!append) tbody.replaceChildren();
     tbody.append(...rows);
