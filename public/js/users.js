@@ -2,7 +2,7 @@ import { h, icon, toast, fill, modal, confirmDialog, menu, copyText, debounce } 
 import { get, post, put, patch, del, fmtDate, fmtDateTime, initials } from './api.js';
 import { userTabs } from './announce.js';
 
-const state = { users: [], mods: [], mail: false, q: '', filter: 'all', me: null };
+const state = { users: [], mods: [], groups: [], mail: false, q: '', filter: 'all', me: null };
 
 function copyField(text) {
   return h('div', { class: 'copy-field' }, h('input', { class: 'input', readonly: true, value: text, onfocus: (e) => e.target.select() }),
@@ -37,6 +37,19 @@ function userDialog(u, reload) {
   const active = h('input', { type: 'checkbox', checked: u ? u.active : true });
   const mode = h('select', { class: 'input' }, h('option', { value: 'invite' }, 'Einladungs-Link (Person setzt Passwort selbst)'), h('option', { value: 'password' }, 'Temporäres Passwort erzeugen'));
   const mx = matrix(u?.modules);
+  const myGroups = new Set(u ? state.groups.filter((g) => g.members.includes(u.id)).map((g) => g.id) : []);
+  const groupBox = state.groups.length
+    ? h('div', { class: 'pick-chips' }, state.groups.map((g) => {
+      const cb = h('input', { type: 'checkbox', checked: myGroups.has(g.id), onchange: () => { cb.checked ? myGroups.add(g.id) : myGroups.delete(g.id); } });
+      return h('label', { class: 'pick-chip own' }, cb, h('span', null, g.name));
+    }))
+    : h('p', { class: 'hint' }, 'Noch keine Gruppen angelegt – unter ', h('a', { href: '#/benutzer/gruppen', style: { color: 'var(--accent-2)' } }, 'Benutzer → Gruppen'), '.');
+  const rowGroups = h('div', null, h('div', { class: 'section-title' }, 'Gruppen'), groupBox);
+  const saveGroups = async (id, before) => {
+    const want = [...myGroups].sort(), had = [...before].sort();
+    if (JSON.stringify(want) !== JSON.stringify(had)) await put(`/api/users/${id}/groups`, { groups: want });
+  };
+  const groupsBefore = new Set(myGroups);
   const kindSeg = h('div', { class: 'seg seg-wide' });
   const rowRole = h('label', { class: 'field' }, h('span', null, 'Plattform-Rolle'), role, h('small', { class: 'hint' }, 'Plattform-Admins verwalten Benutzer und System und haben in jedem Modul volle Rechte.'));
   const rowExp = h('label', { class: 'field' }, h('span', null, 'Zugang gültig bis'), exp, h('small', { class: 'hint' }, 'Leer = unbefristet. Am Ende des Tages wird das Konto gesperrt.'));
@@ -58,6 +71,7 @@ function userDialog(u, reload) {
     isNew ? h('label', { class: 'field' }, h('span', null, 'Zugang einrichten'), mode) : null,
     !isNew && !locked ? h('label', { class: 'switch', style: { marginBottom: '14px' } }, active, h('span', null, 'Konto aktiv')) : null,
     u?.owner ? h('p', { class: 'hint' }, 'Der Super-Admin hat überall volle Rechte.') : rowMods,
+    rowGroups,
     err);
   const m = modal({ title: isNew ? 'Benutzer anlegen' : 'Benutzer bearbeiten', body, wide: true, actions: [
     { label: 'Abbrechen', class: 'ghost' },
@@ -67,6 +81,7 @@ function userDialog(u, reload) {
         const asAdmin = kind === 'member' && role.value === 'admin' && state.me.owner;
         if (isNew) {
           const r = await post('/api/users', { name: name.value, email: email.value, kind, role: asAdmin ? 'admin' : 'user', expires_at: kind === 'guest' ? exp.value : '', modules: asAdmin ? {} : mx.get(), mode: mode.value });
+          await saveGroups(r.user.id, new Set());
           await reload();
           m.close();
           if (r.password) infoDialog('Konto angelegt', h('p', null, `Temporäres Passwort für ${r.user.email} – wird nur jetzt angezeigt. Beim ersten Login muss es geändert werden.`), copyField(r.password));
@@ -88,6 +103,7 @@ function userDialog(u, reload) {
           const want = mx.get(), have = r.user.modules || {};
           if (JSON.stringify(Object.entries(want).sort()) !== JSON.stringify(Object.entries(have).sort())) await put('/api/users/' + u.id + '/modules', { modules: want });
         }
+        await saveGroups(u.id, groupsBefore);
         toast('Gespeichert', 'ok'); await reload();
       } catch (e) { err.textContent = e.message; return false; }
     } }] });
@@ -139,6 +155,9 @@ function userRow(u, reload) {
   if (u.totp_enabled) badges.push(h('span', { class: 'chip green' }, icon('shield'), '2FA'));
   const mods = u.role === 'admin' || u.owner ? [h('span', { class: 'chip' }, 'Alle Module · volle Rechte')]
     : state.mods.filter((m) => u.modules[m.id]).map((m) => h('span', { class: 'chip' }, m.name + ': ', m.roles.find((r) => r.id === u.modules[m.id])?.label || u.modules[m.id]));
+  const grp = state.groups.filter((g) => g.members.includes(u.id));
+  if (grp.length && !mods.length) mods.push(h('span', { class: 'hint' }, 'Keine Module ·'));
+  if (grp.length) mods.push(...grp.map((g) => h('span', { class: 'chip chip-group' }, icon('users'), g.name)));
   const more = h('button', { class: 'icon-btn', 'aria-label': 'Aktionen', onclick: (e) => rowMenu(e.currentTarget, u, reload) }, icon('more'));
   return h('div', { class: 'u-row' + (!u.active || u.expired ? ' off' : '') },
     h('span', { class: 'avatar ' + (u.owner ? 'role-owner' : u.role === 'admin' ? 'role-admin' : u.kind === 'guest' ? 'role-guest' : 'role-user') }, initials(u)),
@@ -158,7 +177,7 @@ export async function usersPage(ctx) {
     count.textContent = `${rows.length} von ${state.users.length}`;
     fill(list, rows.length ? rows.map((u) => userRow(u, reload)) : h('div', { class: 'empty' }, 'Keine Benutzer gefunden.'));
   };
-  const reload = async () => { const r = await get('/api/users'); state.users = r.users; state.mail = r.mail; paint(); };
+  const reload = async () => { const [r, g] = await Promise.all([get('/api/users'), get('/api/groups')]); state.users = r.users; state.mail = r.mail; state.groups = g.groups; paint(); };
   const search = h('input', { class: 'input', placeholder: 'Suchen …', value: state.q, oninput: debounce((e) => { state.q = e.target.value; paint(); }, 120) });
   const filt = h('select', { class: 'input', style: { width: 'auto' }, onchange: (e) => { state.filter = e.target.value; paint(); } },
     [['all', 'Alle'], ['member', 'Mitglieder'], ['guest', 'Gäste'], ['admin', 'Plattform-Admins'], ['inactive', 'Gesperrt / abgelaufen']].map(([v, l]) => h('option', { value: v, selected: v === state.filter }, l)));

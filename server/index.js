@@ -50,6 +50,8 @@ function send(res, status, data, headers = {}) {
 }
 
 function readBody(req, limit = 1024 * 1024) {
+  const raw = String(req.headers['content-type'] || '').startsWith('application/octet-stream');
+  if (raw) limit = 200 * 1024 * 1024; // Datei-Upload (Backup)
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
@@ -59,6 +61,7 @@ function readBody(req, limit = 1024 * 1024) {
       chunks.push(c);
     });
     req.on('end', () => {
+      if (raw) return resolve(Buffer.concat(chunks));
       if (!size) return resolve({});
       try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
       catch { reject(new HttpError(400, 'Ungültiges JSON')); }
@@ -647,6 +650,18 @@ GET('/api/system/backups/:name', needAdmin, (req, res) => {
   fs.createReadStream(f).pipe(res);
   return HANDLED;
 });
+POST('/api/system/backups/upload', needOwner, (req) => {
+  let b;
+  try { b = backup.saveUpload(req.body, req.query.name); } catch (e) { fail(400, e.message); }
+  audit.log('backup_upload', { actor: req.user, target: b.name, ip: clientIp(req), detail: { size: b.size } });
+  return { backup: b };
+});
+POST('/api/system/backups/:name/restore', needOwner, (req) => {
+  let r;
+  try { r = backup.restore(req.params.name); } catch (e) { fail(400, e.message); }
+  audit.log('backup_restored', { actor: req.user, target: req.params.name, ip: clientIp(req), detail: { safety: r.safety, users: r.users } });
+  return r;
+});
 DELETE('/api/system/backups/:name', needAdmin, (req) => {
   if (!backup.remove(req.params.name)) fail(404, 'Backup nicht gefunden');
   audit.log('backup_delete', { actor: req.user, target: req.params.name, ip: clientIp(req) });
@@ -654,6 +669,13 @@ DELETE('/api/system/backups/:name', needAdmin, (req) => {
 });
 /* ================================================================== API: Ankündigungen & Gruppen */
 GET('/api/announcements', needAuth, (req) => ({ items: ann.myAnnouncements(req.user.id, { all: req.query.all === '1' }) }));
+
+PUT('/api/users/:id/groups', needAdmin, (req) => {
+  const t = getTarget(req);
+  ann.setUserGroups(t.id, req.body.groups);
+  audit.log('group_saved', { actor: req.user, target: t.email, ip: clientIp(req), detail: { groups: ann.groupsOfUser(t.id).length } });
+  return { groups: ann.groupsOfUser(t.id) };
+});
 
 POST('/api/announcements/:id/read', needAuth, (req) => ({ ok: ann.markRead(req.user.id, Number(req.params.id)) }));
 

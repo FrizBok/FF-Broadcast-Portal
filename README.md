@@ -20,11 +20,11 @@ Mit Docker: `docker compose up -d` (Daten im Volume `/data`).
 - **Modul-Rechte:** pro Modul eigene Rollen; kein Eintrag = Modul unsichtbar.
 - **Anmeldung:** E-Mail + Passwort (min. 10 Zeichen), optional/verpflichtend 2FA (TOTP, Wiederherstellungs-Codes), Passwort vergessen per SMTP, Einladungs-Links.
 - **Ankündigungen:** Admins schreiben Nachrichten an alle, an Gruppen (fest oder selbst angelegt) oder einzelne Personen – als Info-Kasten auf der Startseite und optional per E-Mail.
-- **System:** SMTP-Einstellungen, 2FA-Pflicht (nur Super-Admin), Protokoll, Datenbank-Backups.
+- **System:** SMTP-Einstellungen, 2FA-Pflicht (nur Super-Admin), Protokoll, Datenbank-Backups (erstellen, hochladen, zurückspielen – nur Super-Admin, mit automatischer Sicherung davor).
 - **Notfall:** `node server/reset-password.js --list | <email> | --admin | --owner | --link | --no2fa`.
 
 Eigene Module: siehe [docs/modul-entwickeln.md](docs/modul-entwickeln.md).
 
 ## Stand
 
-Gerüst mit Oberfläche und API. Noch offen: Backup-Wiederherstellung, FF Rundown als echtes Modul (bis dahin verlinkt `RUNDOWN_URL` auf die bestehende Installation).
+Gerüst mit Oberfläche und API. Noch offen: FF Rundown als echtes Modul (bis dahin verlinkt `RUNDOWN_URL` auf die bestehende Installation).

@@ -1,4 +1,4 @@
-import { h, icon, toast, fill, modal, confirmDialog, copyText } from './ui.js';
+import { h, icon, toast, fill, modal, confirmDialog, copyText, confirmTyped } from './ui.js';
 import { get, post, put, del, fmtDateTime } from './api.js';
 import { S } from './app.js';
 
@@ -66,9 +66,9 @@ async function securityTab(ctx, body) {
     h('p', { class: 'hint' }, `${s.users_with_2fa} von ${s.users_active} aktiven Konten nutzen 2FA.`)));
 }
 
-const KIND = { setup: 'Einrichtung', login: 'Anmeldung', login_fail: 'Anmeldung fehlgeschlagen', login_2fa_fail: '2FA-Code falsch', forgot: 'Passwort vergessen', reset_used: 'Passwort zurückgesetzt', invite_accepted: 'Einladung angenommen', twofa_enabled: '2FA eingeschaltet', twofa_disabled: '2FA ausgeschaltet', twofa_reset: '2FA zurückgesetzt', recovery_used: 'Wiederherstellungs-Code benutzt', recovery_new: 'Neue Wiederherstellungs-Codes', user_created: 'Konto angelegt', user_invited: 'Konto eingeladen', user_deleted: 'Konto gelöscht', user_updated: 'Konto geändert', module_access: 'Modul-Rechte geändert', password_self: 'Passwort geändert', password_admin: 'Passwort gesetzt (Admin)', reset_link: 'Link erzeugt', owner: 'Super-Admin übertragen', mail_sent: 'Mail gesendet', mail_failed: 'Mail fehlgeschlagen', backup_manual: 'Backup erstellt', backup_delete: 'Backup gelöscht', backup_failed: 'Backup fehlgeschlagen', mail_settings: 'Mail-Einstellungen', policy_changed: '2FA-Regel geändert' };
+const KIND = { setup: 'Einrichtung', login: 'Anmeldung', login_fail: 'Anmeldung fehlgeschlagen', login_2fa_fail: '2FA-Code falsch', forgot: 'Passwort vergessen', reset_used: 'Passwort zurückgesetzt', invite_accepted: 'Einladung angenommen', twofa_enabled: '2FA eingeschaltet', twofa_disabled: '2FA ausgeschaltet', twofa_reset: '2FA zurückgesetzt', recovery_used: 'Wiederherstellungs-Code benutzt', recovery_new: 'Neue Wiederherstellungs-Codes', user_created: 'Konto angelegt', user_invited: 'Konto eingeladen', user_deleted: 'Konto gelöscht', user_updated: 'Konto geändert', module_access: 'Modul-Rechte geändert', password_self: 'Passwort geändert', password_admin: 'Passwort gesetzt (Admin)', reset_link: 'Link erzeugt', owner: 'Super-Admin übertragen', mail_sent: 'Mail gesendet', mail_failed: 'Mail fehlgeschlagen', backup_manual: 'Backup erstellt', backup_upload: 'Backup hochgeladen', backup_restored: 'Backup zurückgespielt', announcement_created: 'Ankündigung erstellt', announcement_deleted: 'Ankündigung gelöscht', group_saved: 'Gruppe gespeichert', group_deleted: 'Gruppe gelöscht', backup_delete: 'Backup gelöscht', backup_failed: 'Backup fehlgeschlagen', mail_settings: 'Mail-Einstellungen', policy_changed: '2FA-Regel geändert' };
 
-const DL = { ua: 'Gerät', known: 'Konto bekannt', reason: 'Grund', kind: 'Art', role: 'Rolle', active: 'Aktiv', modules: 'Module', before: 'Vorher', after: 'Nachher', hours: 'Gültig (Std.)', mailed: 'Per Mail', recipients: 'Empfänger', mail: 'Per Mail', members: 'Mitglieder', twofa_policy: '2FA-Regel', subject: 'Betreff', error: 'Fehler', left: 'Codes übrig', host: 'Server', port: 'Port', user: 'Benutzer', from: 'Absender', app_url: 'App-Adresse', expires_at: 'Ablauf', name: 'Name', email: 'E-Mail', initial: 'Erstes Passwort', recovery: 'Wiederherstellungs-Code', twofa: '2FA', tpl: 'Vorlage', secure: 'Verschlüsselung' };
+const DL = { ua: 'Gerät', known: 'Konto bekannt', reason: 'Grund', kind: 'Art', role: 'Rolle', active: 'Aktiv', modules: 'Module', before: 'Vorher', after: 'Nachher', hours: 'Gültig (Std.)', mailed: 'Per Mail', recipients: 'Empfänger', mail: 'Per Mail', members: 'Mitglieder', twofa_policy: '2FA-Regel', subject: 'Betreff', error: 'Fehler', left: 'Codes übrig', host: 'Server', port: 'Port', user: 'Benutzer', from: 'Absender', app_url: 'App-Adresse', expires_at: 'Ablauf', name: 'Name', email: 'E-Mail', initial: 'Erstes Passwort', safety: 'Sicherung davor', size: 'Größe', groups: 'Gruppen', recovery: 'Wiederherstellungs-Code', twofa: '2FA', tpl: 'Vorlage', secure: 'Verschlüsselung' };
 const DV = { member: 'Mitglied', guest: 'Gast', admin: 'Admin', user: 'Mitglied', required: 'Pflicht', optional: 'freiwillig' };
 function fmtVal(k, v) {
   if (v === true || v === 1) return k === 'active' ? 'ja' : 'ja';
@@ -105,15 +105,55 @@ async function logTab(ctx, body) {
 
 const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 
+const KIND_LABEL = { auto: 'automatisch', manual: 'manuell', upload: 'hochgeladen' };
+
+async function restoreBackup(b) {
+  const ok = await confirmTyped({
+    title: 'Backup zurückspielen', word: 'ZURÜCK', okLabel: 'Zurückspielen',
+    headline: `Der Stand vom ${fmtDateTime(b.at)} ersetzt alle aktuellen Daten.`,
+    intro: 'Vorher wird automatisch eine Sicherung des jetzigen Stands angelegt („vor-wiederherstellung“) – damit lässt sich das wieder umkehren.',
+    points: ['Benutzer, Passwörter, 2FA, Modul-Rechte, Gruppen, Ankündigungen und Einstellungen werden ersetzt.',
+      'Konten, die es damals noch nicht gab, sind danach weg – auch ihre Anmeldungen.', 'Das Protokoll bleibt vollständig erhalten.'],
+  });
+  if (!ok) return;
+  try {
+    const r = await post(`/api/system/backups/${encodeURIComponent(b.name)}/restore`, {});
+    toast(`Zurückgespielt (${r.users} Konten). Seite wird neu geladen …`, 'ok');
+    setTimeout(() => location.reload(), 1500);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function uploadBackup(file, reload) {
+  if (!file) return;
+  try {
+    const r = await fetch('/api/system/backups/upload?name=' + encodeURIComponent(file.name.replace(/\.db$/i, '')), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file, credentials: 'same-origin' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Hochladen fehlgeschlagen');
+    toast('Hochgeladen – jetzt kannst du es zurückspielen', 'ok');
+    reload();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
 async function backupTab(ctx, body) {
   const r = await get('/api/system/backups');
+  const owner = S.user.owner;
+  const reload = () => backupTab(ctx, body);
   const err = h('div', { class: 'form-error' });
-  const create = async () => { try { await post('/api/system/backups', {}); toast('Backup erstellt', 'ok'); backupTab(ctx, body); } catch (e) { err.textContent = e.message; } };
-  fill(body, h('div', { class: 'row', style: { marginBottom: '14px' } }, h('span', { class: 'hint' }, 'Automatische Sicherungen der Datenbank laufen im Hintergrund.'), h('div', { class: 'spacer' }), h('button', { class: 'btn primary', onclick: create }, icon('database'), 'Backup jetzt erstellen')), err,
+  const create = async () => { try { await post('/api/system/backups', {}); toast('Backup erstellt', 'ok'); reload(); } catch (e) { err.textContent = e.message; } };
+  const file = h('input', { type: 'file', accept: '.db,application/octet-stream', style: { display: 'none' }, onchange: (e) => uploadBackup(e.target.files[0], reload) });
+  fill(body,
+    h('div', { class: 'row', style: { marginBottom: '8px' } },
+      h('div', { class: 'spacer' }),
+      owner ? h('button', { class: 'btn', onclick: () => file.click() }, icon('upload'), 'Backup hochladen') : null, file,
+      h('button', { class: 'btn primary', onclick: create }, icon('database'), 'Backup jetzt erstellen')),
+    h('p', { class: 'hint', style: { margin: '0 0 14px' } }, (r.settings.enabled ? `Automatisch alle ${r.settings.interval_hours} Stunden, die letzten ${r.settings.keep} bleiben erhalten. Manuelle und hochgeladene Sicherungen werden nie automatisch gelöscht.` : 'Automatische Sicherungen sind ausgeschaltet.')
+      + (owner ? ' Mit ↺ spielst du eine Sicherung zurück; vorher wird der aktuelle Stand gesichert.' : ' Zurückspielen und Hochladen darf nur der Super-Admin.')),
+    err,
     r.backups.length ? h('div', { class: 'u-list' }, r.backups.map((b) => h('div', { class: 'u-row', style: { gridTemplateColumns: 'minmax(0,1fr) auto auto auto' } },
       h('div', { class: 'u-who' }, h('b', null, b.name), h('span', null, fmtDateTime(b.at))),
-      h('span', { class: 'chip ' + (b.kind === 'auto' ? '' : 'accent') }, b.kind === 'auto' ? 'automatisch' : 'manuell'), h('span', { class: 'hint' }, fmtSize(b.size)),
+      h('span', { class: 'chip ' + (b.kind === 'auto' ? '' : b.kind === 'upload' ? 'amber' : 'accent') }, KIND_LABEL[b.kind] || b.kind), h('span', { class: 'hint' }, fmtSize(b.size)),
       h('div', { class: 'u-actions' },
+        owner ? h('button', { class: 'icon-btn', title: 'Zurückspielen', onclick: () => restoreBackup(b) }, icon('rotate')) : null,
         h('a', { class: 'icon-btn', href: '/api/system/backups/' + encodeURIComponent(b.name), title: 'Herunterladen' }, icon('download')),
-        h('button', { class: 'icon-btn', title: 'Löschen', onclick: async () => { if (await confirmDialog(`${b.name} löschen?`)) { try { await del('/api/system/backups/' + encodeURIComponent(b.name)); backupTab(ctx, body); } catch (e) { toast(e.message, 'err'); } } } }, icon('trash')))))) : h('div', { class: 'empty' }, h('b', null, 'Noch keine Backups'), 'Erstelle das erste mit dem Knopf oben.'));
+        h('button', { class: 'icon-btn', title: 'Löschen', onclick: async () => { if (await confirmDialog(`${b.name} löschen?`)) { try { await del('/api/system/backups/' + encodeURIComponent(b.name)); reload(); } catch (e) { toast(e.message, 'err'); } } } }, icon('trash')))))) : h('div', { class: 'empty' }, h('b', null, 'Noch keine Backups'), 'Erstelle das erste mit dem Knopf oben.'));
 }

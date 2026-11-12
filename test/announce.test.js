@@ -23,7 +23,12 @@ function client() {
     try { data = await r.json(); } catch { /* */ }
     return { status: r.status, data };
   };
-  return { get: (u) => call('GET', u), post: (u, b = {}) => call('POST', u, b), put: (u, b = {}) => call('PUT', u, b), del: (u) => call('DELETE', u) };
+  const raw = async (url, buf) => {
+    const r = await fetch(BASE + url, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', ...(cookie ? { Cookie: cookie } : {}) }, body: buf });
+    return { status: r.status, data: await r.json().catch(() => null) };
+  };
+  const download = async (url) => Buffer.from(await (await fetch(BASE + url, { headers: cookie ? { Cookie: cookie } : {} })).arrayBuffer());
+  return { get: (u) => call('GET', u), post: (u, b = {}) => call('POST', u, b), put: (u, b = {}) => call('PUT', u, b), del: (u) => call('DELETE', u), raw, download };
 }
 
 before(async () => {
@@ -93,4 +98,56 @@ test('Gruppen und Ankündigungen erreichen nur die gewählten Empfänger', async
   assert.equal((await owner.del(`/api/admin/announcements/${kam.id}`)).status, 200);
   assert.equal((await owner.get('/api/admin/announcements')).data.items.length, 4);
   assert.equal((await owner.del(`/api/groups/${g.data.group.id}`)).status, 200);
+});
+
+test('Gruppen einer Person direkt setzen', async () => {
+  const a = await owner.post('/api/groups', { name: 'Licht' });
+  const b = await owner.post('/api/groups', { name: 'Ton' });
+  const uid = people['b@example.de'].id;
+  const r = await owner.put(`/api/users/${uid}/groups`, { groups: [a.data.group.id, b.data.group.id, 9999] });
+  assert.deepEqual(r.data.groups, [a.data.group.id, b.data.group.id]);
+  assert.equal((await people['b@example.de'].cl.put(`/api/users/${uid}/groups`, { groups: [] })).status, 403);
+  await owner.put(`/api/users/${uid}/groups`, { groups: [b.data.group.id] });
+  const groups = (await owner.get('/api/groups')).data.groups;
+  assert.deepEqual(groups.find((g) => g.name === 'Licht').members, []);
+  assert.deepEqual(groups.find((g) => g.name === 'Ton').members, [uid]);
+});
+
+test('Backup zurückspielen und hochladen (nur Super-Admin)', async () => {
+  const bk = (await owner.post('/api/system/backups', {})).data.backup;
+  await owner.post('/api/users', { email: 'spaeter@example.de', mode: 'invite' });
+  await owner.post('/api/groups', { name: 'Neue Gruppe' });
+  assert.ok((await owner.get('/api/users')).data.users.some((u) => u.email === 'spaeter@example.de'));
+
+  // Andere Admins dürfen nicht zurückspielen
+  await owner.post('/api/users', { email: 'admin2@example.de', role: 'admin', mode: 'password', password: PW });
+  const adm = client();
+  await adm.post('/api/auth/login', { email: 'admin2@example.de', password: PW });
+  await adm.post('/api/auth/initial-password', { password: PW + 'x' });
+  assert.equal((await adm.post(`/api/system/backups/${bk.name}/restore`)).status, 403);
+
+  const r = await owner.post(`/api/system/backups/${bk.name}/restore`);
+  assert.equal(r.status, 200);
+  assert.match(r.data.safety, /^manual-.*vor-wiederherstellung.*\.db$/);
+  const users = (await owner.get('/api/users')).data.users;
+  assert.ok(!users.some((u) => u.email === 'spaeter@example.de'));
+  assert.ok(!users.some((u) => u.email === 'admin2@example.de'));
+  assert.ok(!(await owner.get('/api/groups')).data.groups.some((g) => g.name === 'Neue Gruppe'));
+  assert.equal((await adm.get('/api/me')).status, 401); // Konto gibt es im alten Stand nicht
+  // Protokoll bleibt erhalten und enthält die Wiederherstellung
+  const log = (await owner.get('/api/system/audit?q=spaeter')).data.entries;
+  assert.ok(log.some((e) => e.kind === 'user_invited'));
+  assert.ok((await owner.get('/api/system/audit?cat=system')).data.entries.some((e) => e.kind === 'backup_restored'));
+
+  // Sicherungsstand „vor der Wiederherstellung“ wieder einspielen → Konto ist zurück
+  assert.equal((await owner.post(`/api/system/backups/${r.data.safety}/restore`)).status, 200);
+  assert.ok((await owner.get('/api/users')).data.users.some((u) => u.email === 'spaeter@example.de'));
+
+  // Hochladen: echte Sicherung ja, Unsinn nein
+  const buf = await owner.download(`/api/system/backups/${bk.name}`);
+  const up = await owner.raw('/api/system/backups/upload?name=vom-alten-server', buf);
+  assert.equal(up.status, 200);
+  assert.match(up.data.backup.name, /^upload-.*-vom-alten-server\.db$/);
+  assert.equal((await owner.raw('/api/system/backups/upload', Buffer.from('kein backup'.repeat(100)))).status, 400);
+  assert.equal((await adm.raw('/api/system/backups/upload', buf)).status, 403); // admin2 ist durch den zweiten Restore wieder da, aber kein Super-Admin
 });

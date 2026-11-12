@@ -461,3 +461,4 @@ textarea.input { min-height: 110px; padding-top: 10px; resize: vertical; line-he
 .toast.err { background: color-mix(in srgb, var(--surface) 96%, transparent); color: var(--text); border-color: color-mix(in srgb, var(--red) 55%, transparent); }
 .toast.err .ico { color: var(--red-text); }
 
+.chip-group { background: transparent; box-shadow: inset 0 0 0 1px var(--border-2); }

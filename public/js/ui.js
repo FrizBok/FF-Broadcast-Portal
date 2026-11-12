@@ -255,7 +255,7 @@ export function fill(el, ...kids) {
 }
 
 /** Gefährliche Aktion: Bestätigung durch Eintippen eines Wortes */
-export function confirmTyped({ title, intro, points = [], word = 'NEU', okLabel = 'Bestätigen' }) {
+export function confirmTyped({ title, intro, points = [], word = 'NEU', okLabel = 'Bestätigen', headline = 'Achtung – diese Aktion kann nicht rückgängig gemacht werden.' }) {
   return new Promise((resolve) => {
     let done = false;
     const input = h('input', { class: 'input', autocomplete: 'off', spellcheck: 'false', placeholder: word });
@@ -264,7 +264,7 @@ export function confirmTyped({ title, intro, points = [], word = 'NEU', okLabel 
     input.addEventListener('input', check);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !ok.disabled) ok.click(); });
     const body = h('div', null,
-      h('div', { class: 'danger-box' }, icon('alert'), h('div', null, h('b', null, 'Achtung – diese Aktion kann nicht rückgängig gemacht werden.'), intro ? h('div', null, intro) : null)),
+      h('div', { class: 'danger-box' }, icon('alert'), h('div', null, h('b', null, headline), intro ? h('div', null, intro) : null)),
       points.length ? h('ul', { class: 'danger-list' }, points.map((p) => h('li', null, p))) : null,
       h('label', { class: 'field' }, h('span', null, ['Zum Bestätigen ', h('b', null, word), ' eingeben']), input));
     const m = modal({ title, body, onClose: () => { if (!done) resolve(false); } });

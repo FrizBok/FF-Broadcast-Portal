@@ -39,6 +39,18 @@ export function saveGroup(id, { name, description, members }) {
   });
 }
 
+export const groupsOfUser = (uid) => db.prepare('SELECT group_id FROM group_members WHERE user_id=? ORDER BY group_id').all(uid).map((r) => r.group_id);
+
+/** Gruppen einer Person setzen (ersetzt alle bisherigen Mitgliedschaften) */
+export function setUserGroups(uid, ids) {
+  const want = [...new Set((Array.isArray(ids) ? ids : []).map(Number).filter(Number.isInteger))];
+  tx(() => {
+    db.prepare('DELETE FROM group_members WHERE user_id=?').run(uid);
+    const add = db.prepare('INSERT OR IGNORE INTO group_members (group_id, user_id) SELECT id, ? FROM groups WHERE id=?');
+    for (const g of want) add.run(uid, g);
+  });
+}
+
 /* ------------------------------------------------------------------ Empfänger */
 const usable = (u) => u.active && !(u.expires_at && u.expires_at < Date.now());
 
