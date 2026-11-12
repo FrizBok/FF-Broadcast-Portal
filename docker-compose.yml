@@ -1,0 +1,17 @@
+services:
+  portal:
+    build: .
+    image: ff-broadcast-portal:latest
+    container_name: ff-broadcast-portal
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - TZ=Europe/Berlin
+      # Hinter einem Reverse-Proxy mit HTTPS (Internetzugriff) auf true setzen:
+      - TRUST_PROXY=false
+      - APP_URL=
+      - SETUP_TOKEN=
+      - RUNDOWN_URL=
+    volumes:
+      - ./data:/data

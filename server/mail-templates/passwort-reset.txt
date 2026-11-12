@@ -1,0 +1,16 @@
+Betreff: Passwort zurücksetzen – FrankenFinals Broadcast
+
+Neues Passwort festlegen
+
+Hallo {{name}},
+
+{{grund}} Über den Link legst du ein neues Passwort fest.
+
+Neues Passwort festlegen:
+{{link}}
+
+Der Link ist {{gueltigkeit}} gültig und funktioniert genau einmal.
+{{#selbst_angefordert}}Wenn du das nicht warst, kannst du diese Mail ignorieren – dein bisheriges Passwort bleibt gültig.
+{{/selbst_angefordert}}
+--
+Automatisch gesendet von FrankenFinals Broadcast · bitte nicht antworten

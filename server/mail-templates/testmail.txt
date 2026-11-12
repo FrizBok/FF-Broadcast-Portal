@@ -1,0 +1,11 @@
+Betreff: Testmail von FrankenFinals Broadcast
+
+Der Mailversand funktioniert
+
+Diese Testmail wurde von FrankenFinals Broadcast verschickt. Einladungen und „Passwort vergessen“ kommen ab jetzt auf diesem Weg.
+
+Links in den Mails zeigen auf:
+{{app_url}}
+
+--
+Automatisch gesendet von FrankenFinals Broadcast · bitte nicht antworten

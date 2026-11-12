@@ -1,0 +1,15 @@
+Betreff: Dein Passwort wurde geändert
+
+Dein Passwort wurde geändert
+
+Hallo {{name}},
+
+das Passwort für {{email}} wurde am {{zeitpunkt}} geändert.
+
+>> WARST DU DAS NICHT?
+>> Dann melde dich sofort bei {{kontakt}}.
+
+Warst du es selbst, musst du nichts weiter tun.
+
+--
+Automatisch gesendet von FrankenFinals Broadcast · bitte nicht antworten

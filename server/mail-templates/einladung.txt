@@ -1,0 +1,16 @@
+Betreff: Einladung zu FrankenFinals Broadcast
+
+Du wurdest zu FrankenFinals Broadcast eingeladen
+
+Hallo {{name}},
+
+{{eingeladen_von}} hat für dich einen Zugang zu FrankenFinals Broadcast angelegt – der Plattform für unsere Produktionen. Lege jetzt dein eigenes Passwort fest, danach meldest du dich mit {{email}} an.
+
+Passwort festlegen:
+{{link}}
+
+Der Link ist {{gueltigkeit}} gültig und funktioniert genau einmal.
+Tipp: Auf dem Handy kannst du FrankenFinals Broadcast über „Zum Home-Bildschirm“ wie eine App nutzen.
+
+--
+Automatisch gesendet von FrankenFinals Broadcast · bitte nicht antworten

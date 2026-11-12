@@ -1,0 +1,14 @@
+# Laufzeitdaten – enthalten Benutzer, Datenbank und secret.key. NIEMALS committen!
+data/
+*.db
+*.db-wal
+*.db-shm
+secret.key
+
+# Umgebung & System
+.env
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+*.zip
