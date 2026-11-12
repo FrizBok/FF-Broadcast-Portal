@@ -48,8 +48,8 @@ function stored() { try { return JSON.parse(getS.get('mail')?.value || '{}'); } 
 function config() {
   const s = stored();
   const c = envLocked()
-    ? { host: ENV.host, port: Number(ENV.port) || 587, secure: ENV.secure || (Number(ENV.port) === 465 ? 'ssl' : 'starttls'), user: ENV.user || '', pass: ENV.pass || '', from_email: ENV.from_email || ENV.user || '', from_name: ENV.from_name || 'FF-Broadcast', app_url: ENV.app_url || s.app_url || '' }
-    : { host: s.host || '', port: Number(s.port) || 587, secure: s.secure || 'starttls', user: s.user || '', pass: decrypt(s.pass), from_email: s.from_email || '', from_name: s.from_name || 'FF-Broadcast', app_url: s.app_url || '' };
+    ? { host: ENV.host, port: Number(ENV.port) || 587, secure: ENV.secure || (Number(ENV.port) === 465 ? 'ssl' : 'starttls'), user: ENV.user || '', pass: ENV.pass || '', from_email: ENV.from_email || ENV.user || '', from_name: ENV.from_name || 'FrankenFinals Broadcast', app_url: ENV.app_url || s.app_url || '' }
+    : { host: s.host || '', port: Number(s.port) || 587, secure: s.secure || 'starttls', user: s.user || '', pass: decrypt(s.pass), from_email: s.from_email || '', from_name: s.from_name || 'FrankenFinals Broadcast', app_url: s.app_url || process.env.APP_URL || '' };
   c.app_url = String(c.app_url || '').replace(/\/+$/, '');
   return c;
 }
@@ -215,9 +215,13 @@ function load(name) {
   return cache.get(name);
 }
 function fill(tpl, vars, escape) {
+  // {{{name}}} = bereits maskiertes HTML; wird zuletzt eingesetzt, damit Benutzertext nie als Vorlage gelesen wird
+  const raw = [];
   return tpl
+    .replace(/\{\{\{(\w+)\}\}\}/g, (_, k) => `\u0000${raw.push(String(vars[k] ?? '')) - 1}\u0000`)
     .replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, k, inner) => (vars[k] ? inner : ''))
-    .replace(/\{\{(\w+)\}\}/g, (_, k) => (escape ? esc(vars[k]) : String(vars[k] ?? '')));
+    .replace(/\{\{(\w+)\}\}/g, (_, k) => (escape ? esc(vars[k]) : String(vars[k] ?? '')))
+    .replace(/\u0000(\d+)\u0000/g, (_, i) => raw[Number(i)]);
 }
 /** Vorlage füllen → { to, subject, html, text } */
 export function render(name, to, vars = {}) {
@@ -252,6 +256,14 @@ export function resetMail(u, link, { self = false } = {}) {
   return render('passwort-reset', u.email, {
     name: hello(u), link: resetUrl(link), gueltigkeit: validity(link.hours), selbst_angefordert: self,
     grund: self ? 'für dein Konto wurde „Passwort vergessen“ angefordert.' : 'ein Admin hat dir einen Link zum Zurücksetzen deines Passworts geschickt.',
+  });
+}
+
+/** Ankündigung an ein Mitglied */
+export function announcementMail(u, a) {
+  return render('ankuendigung', u.email, {
+    titel: a.title, text: a.body, text_html: esc(a.body).replace(/\n/g, '<br>'), vorschau: a.body.slice(0, 120),
+    von: a.by, datum: when(a.created_at),
   });
 }
 

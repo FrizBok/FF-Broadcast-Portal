@@ -82,6 +82,37 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
 );
 CREATE INDEX IF NOT EXISTS idx_recovery_user ON recovery_codes(user_id);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+-- Eigene Gruppen (z. B. „Kamera-Team“) für Ankündigungen
+CREATE TABLE IF NOT EXISTS groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  description TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS group_members (
+  group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (group_id, user_id)
+);
+-- Ankündigungen: Empfänger werden beim Erstellen festgelegt (announcement_recipients)
+CREATE TABLE IF NOT EXISTS announcements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL DEFAULT '',
+  audience TEXT NOT NULL DEFAULT '{}',        -- Auswahl als JSON (zur Anzeige)
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_by_name TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER,                         -- danach nicht mehr auf der Startseite
+  mailed INTEGER NOT NULL DEFAULT 0           -- Anzahl verschickter Mails
+);
+CREATE TABLE IF NOT EXISTS announcement_recipients (
+  announcement_id INTEGER NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  read_at INTEGER,
+  PRIMARY KEY (announcement_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ann_rcpt_user ON announcement_recipients(user_id);
 `);
 
 /** Platzhalter-Hash für Konten, die noch kein Passwort haben (Einladung offen) – passt zu keinem Passwort */

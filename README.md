@@ -19,6 +19,7 @@ Mit Docker: `docker compose up -d` (Daten im Volume `/data`).
 - **Plattform-Rollen:** Super-Admin (genau einer), Plattform-Admin (Benutzer, Modulrechte, System; volle Rechte in jedem Modul), Mitglied, Externer Gast (befristbar).
 - **Modul-Rechte:** pro Modul eigene Rollen; kein Eintrag = Modul unsichtbar.
 - **Anmeldung:** E-Mail + Passwort (min. 10 Zeichen), optional/verpflichtend 2FA (TOTP, Wiederherstellungs-Codes), Passwort vergessen per SMTP, Einladungs-Links.
+- **Ankündigungen:** Admins schreiben Nachrichten an alle, an Gruppen (fest oder selbst angelegt) oder einzelne Personen – als Info-Kasten auf der Startseite und optional per E-Mail.
 - **System:** SMTP-Einstellungen, 2FA-Pflicht (nur Super-Admin), Protokoll, Datenbank-Backups.
 - **Notfall:** `node server/reset-password.js --list | <email> | --admin | --owner | --link | --no2fa`.
 

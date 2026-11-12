@@ -1,0 +1,13 @@
+Betreff: {{titel}}
+
+{{titel}}
+
+{{text}}
+
+Von {{von}} · {{datum}}
+{{#app_url}}
+Zum Portal: {{app_url}}
+{{/app_url}}
+
+--
+Automatisch gesendet von FrankenFinals Broadcast · bitte nicht antworten

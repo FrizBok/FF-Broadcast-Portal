@@ -29,6 +29,7 @@ const CAT = {
   password_self: 'konto', password_admin: 'konto', reset_link: 'konto', owner: 'konto',
   mail_sent: 'mail', mail_failed: 'mail',
   backup_manual: 'system', backup_delete: 'system', backup_failed: 'system', mail_settings: 'system', policy_changed: 'system',
+  announcement_created: 'konto', announcement_deleted: 'konto', group_saved: 'konto', group_deleted: 'konto',
 };
 export const CATS = ['auth', 'konto', 'mail', 'system'];
 

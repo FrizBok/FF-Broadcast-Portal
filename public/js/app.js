@@ -3,6 +3,7 @@ import { get, post, patch, initials } from './api.js';
 import { qrSvg } from './qr.js';
 import { usersPage } from './users.js';
 import { systemPage } from './system.js';
+import { announceBox, announceDialog, announcementsPage, groupsPage } from './announce.js';
 
 export const S = { user: null, status: null, modules: [] };
 const root = document.body.appendChild(document.createElement('div'));
@@ -150,6 +151,7 @@ async function mustTwofaScreen() {
 const NAV = () => [
   { href: '#/', label: 'Übersicht', icon: 'grid', match: (p) => p === '' || p === '/' },
   S.user.role === 'admin' ? { href: '#/benutzer', label: 'Benutzer', icon: 'users', match: (p) => p.startsWith('/benutzer') } : null,
+  S.user.role === 'admin' ? { href: '#/ankuendigungen', label: 'Ankündigungen', icon: 'bell', match: (p) => p.startsWith('/ankuendigungen') } : null,
   S.user.role === 'admin' ? { href: '#/system', label: 'System', icon: 'shield', match: (p) => p.startsWith('/system'), dot: S.status?.alerts > 0 } : null,
 ].filter(Boolean);
 
@@ -173,15 +175,20 @@ function shell(path, ...content) {
 /* ------------------------------------------------------------ Startseite */
 async function homePage() {
   const u = S.user;
+  const admin = u.role === 'admin';
   const list = h('div');
-  shell('/', h('div', { class: 'page-head' }, h('span', { class: 'label' }, 'WILLKOMMEN'), h('h1', null, u.name ? `Hallo ${u.name.split(' ')[0]}` : 'Übersicht'),
-    h('p', { class: 'sub' }, 'Deine Module bei FrankenFinals Broadcast.')), list);
+  const annSlot = h('div');
+  shell('/', h('div', { class: 'page-head row' }, h('div', null, h('span', { class: 'label' }, 'WILLKOMMEN'), h('h1', null, u.name ? `Hallo ${u.name.split(' ')[0]}` : 'Übersicht'),
+    h('p', { class: 'sub' }, 'Deine Module bei FrankenFinals Broadcast.')),
+    h('div', { class: 'spacer' }), admin ? h('button', { class: 'btn', onclick: () => announceDialog(() => render()) }, icon('bell'), 'Ankündigung erstellen') : null),
+    annSlot, h('div', { class: 'section-title' }, 'Module'), list);
+  announceBox(admin).then((b) => fill(annSlot, b));
   let mods = [];
   try { mods = await get('/api/modules'); } catch (e) { return fill(list, h('div', { class: 'empty' }, e.message)); }
   S.modules = mods;
   if (!mods.length) {
     return fill(list, h('div', { class: 'empty' }, h('b', null, 'Noch keine Module'),
-      u.role === 'admin' ? 'Weise Benutzern unter „Benutzer“ Module zu.' : 'Dir wurde noch kein Modul freigegeben. Frag einen Admin.'));
+      admin ? 'Weise Benutzern unter „Benutzer“ Module zu.' : 'Dir wurde noch kein Modul freigegeben. Frag einen Admin.'));
   }
   fill(list, h('div', { class: 'mod-grid' }, mods.map((m) => modCard(m))));
 }
@@ -264,7 +271,9 @@ async function render() {
   const path = hash || '/';
   const admin = S.user.role === 'admin';
   if (path === '/konto') return accountPage();
+  if (admin && path.startsWith('/benutzer/gruppen')) return groupsPage(ctx);
   if (admin && path.startsWith('/benutzer')) return usersPage(ctx);
+  if (admin && path.startsWith('/ankuendigungen')) return announcementsPage(ctx);
   if (admin && path.startsWith('/system')) return systemPage(ctx, path.split('/')[2] || 'mail');
   return homePage();
 }

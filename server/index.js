@@ -9,6 +9,7 @@ import { db, DATA_DIR, getSecret, getSetting, setSetting, randomToken, seal, uns
 import * as audit from './audit.js';
 import * as mail from './mail.js';
 import * as backup from './backup.js';
+import * as ann from './announce.js';
 import {
   hashPassword, verifyPassword, signToken, verifyToken, parseCookies, serializeCookie, sha256,
   newTotpSecret, verifyTotp, otpauthUrl, makeRecoveryCodes, hashRecovery, normalizeRecovery,
@@ -651,6 +652,67 @@ DELETE('/api/system/backups/:name', needAdmin, (req) => {
   audit.log('backup_delete', { actor: req.user, target: req.params.name, ip: clientIp(req) });
   return { ok: true };
 });
+/* ================================================================== API: Ankündigungen & Gruppen */
+GET('/api/announcements', needAuth, (req) => ({ items: ann.myAnnouncements(req.user.id, { all: req.query.all === '1' }) }));
+
+POST('/api/announcements/:id/read', needAuth, (req) => ({ ok: ann.markRead(req.user.id, Number(req.params.id)) }));
+
+GET('/api/admin/announcements', needAdmin, () => ({ items: ann.adminAnnouncements(), mail: mail.enabled() }));
+
+POST('/api/admin/announcements/preview', needAdmin, (req) => ({ count: ann.resolveAudience(req.body.audience || {}).length }));
+
+/** Mails nacheinander im Hintergrund verschicken, damit der SMTP-Server nicht überlastet */
+async function mailAnnouncement(id, recipients) {
+  const a = db.prepare('SELECT * FROM announcements WHERE id=?').get(id);
+  if (!a) return;
+  const msg = { title: a.title, body: a.body, by: a.created_by_name, created_at: a.created_at };
+  let sent = 0;
+  for (const u of recipients) {
+    try { await mail.send(mail.announcementMail(u, msg)); sent++; } catch (e) { console.error(`  Ankündigung an ${u.email} fehlgeschlagen: ${e.message}`); }
+  }
+  db.prepare('UPDATE announcements SET mailed=? WHERE id=?').run(sent, id);
+}
+
+POST('/api/admin/announcements', needAdmin, (req) => {
+  const b = req.body;
+  let r;
+  try { r = ann.createAnnouncement({ title: b.title, body: b.body, audience: b.audience, expires_at: parseExpiry(b.expires_at) }, req.user); }
+  catch (e) { fail(400, e.message); }
+  const send = !!b.send_mail && mail.enabled();
+  audit.log('announcement_created', { actor: req.user, target: String(b.title || '').slice(0, 120), ip: clientIp(req), detail: { recipients: r.recipients.length, mail: send } });
+  if (send) mailAnnouncement(r.id, r.recipients).catch((e) => console.error('  Ankündigung:', e.message));
+  return { id: r.id, recipients: r.recipients.length, mailing: send };
+});
+
+DELETE('/api/admin/announcements/:id', needAdmin, (req) => {
+  const a = db.prepare('SELECT * FROM announcements WHERE id=?').get(Number(req.params.id));
+  if (!a) fail(404, 'Ankündigung nicht gefunden');
+  db.prepare('DELETE FROM announcements WHERE id=?').run(a.id);
+  audit.log('announcement_deleted', { actor: req.user, target: a.title, ip: clientIp(req) });
+  return { ok: true };
+});
+
+GET('/api/groups', needAdmin, () => ({ auto: ann.autoGroups(), groups: ann.listGroups() }));
+
+const saveGroup = (req, id) => {
+  let gid;
+  try { gid = ann.saveGroup(id, req.body); } catch (e) { fail(400, e.message); }
+  audit.log('group_saved', { actor: req.user, target: String(req.body.name || ''), ip: clientIp(req), detail: { members: (req.body.members || []).length } });
+  return { group: ann.listGroups().find((g) => g.id === gid) };
+};
+POST('/api/groups', needAdmin, (req) => saveGroup(req, null));
+PUT('/api/groups/:id', needAdmin, (req) => {
+  if (!db.prepare('SELECT id FROM groups WHERE id=?').get(Number(req.params.id))) fail(404, 'Gruppe nicht gefunden');
+  return saveGroup(req, Number(req.params.id));
+});
+DELETE('/api/groups/:id', needAdmin, (req) => {
+  const g = db.prepare('SELECT * FROM groups WHERE id=?').get(Number(req.params.id));
+  if (!g) fail(404, 'Gruppe nicht gefunden');
+  db.prepare('DELETE FROM groups WHERE id=?').run(g.id);
+  audit.log('group_deleted', { actor: req.user, target: g.name, ip: clientIp(req) });
+  return { ok: true };
+});
+
 /* ================================================================== Module einhängen */
 for (const { manifest, register } of modules) {
   if (!register) continue;

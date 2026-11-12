@@ -1,5 +1,6 @@
 import { h, icon, toast, fill, modal, confirmDialog, menu, copyText, debounce } from './ui.js';
 import { get, post, put, patch, del, fmtDate, fmtDateTime, initials } from './api.js';
+import { userTabs } from './announce.js';
 
 const state = { users: [], mods: [], mail: false, q: '', filter: 'all', me: null };
 
@@ -165,7 +166,7 @@ export async function usersPage(ctx) {
     h('div', { class: 'page-head row' }, h('div', null, h('span', { class: 'label' }, 'VERWALTUNG'), h('h1', null, 'Benutzer'),
       h('p', { class: 'sub' }, 'Konten anlegen, Gäste befristen und Modul-Rechte vergeben. Konten gibt es nur auf Einladung.')),
       h('div', { class: 'spacer' }), h('button', { class: 'btn primary', onclick: () => userDialog(null, reload) }, icon('plus'), 'Benutzer anlegen')),
-    h('div', { class: 'u-tools' }, search, filt, count), list);
+    userTabs('users'), h('div', { class: 'u-tools' }, search, filt, count), list);
   try {
     [state.mods] = await Promise.all([get('/api/modules/all'), reload()]);
     paint();
