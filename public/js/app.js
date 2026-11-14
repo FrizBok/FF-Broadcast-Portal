@@ -274,7 +274,7 @@ async function render() {
   if (admin && path.startsWith('/benutzer/gruppen')) return groupsPage(ctx);
   if (admin && path.startsWith('/benutzer')) return usersPage(ctx);
   if (admin && path.startsWith('/ankuendigungen')) return announcementsPage(ctx);
-  if (admin && path.startsWith('/system')) return systemPage(ctx, path.split('/')[2] || 'mail');
+  if (admin && path.startsWith('/system')) return systemPage(ctx, path.split('/')[2] || '');
   return homePage();
 }
 

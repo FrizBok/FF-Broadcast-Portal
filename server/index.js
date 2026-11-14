@@ -637,6 +637,18 @@ PUT('/api/system/security', needOwner, (req) => {
 GET('/api/system/audit', needAdmin, (req) => audit.list({ cat: req.query.cat, q: req.query.q, before: req.query.before, limit: req.query.limit }));
 
 GET('/api/system/backups', needAdmin, () => ({ backups: backup.list(), settings: backup.settings() }));
+
+/** Kurzstatus für die Bereichsliste unter System (wie in FF Rundown) */
+GET('/api/system/summary', needAdmin, () => {
+  const list = backup.list();
+  const sec = db.prepare("SELECT SUM(active=1) AS active, SUM(active=1 AND totp_enabled=1) AS twofa FROM users").get();
+  return {
+    mail: { enabled: mail.enabled() },
+    security: { policy: twofaPolicy(), users_active: sec.active || 0, users_with_2fa: sec.twofa || 0 },
+    backups: { count: list.length, latest: list.reduce((m, b) => Math.max(m, b.at), 0) || null, settings: backup.settings() },
+    audit: audit.summary(),
+  };
+});
 POST('/api/system/backups', needAdmin, (req) => {
   let b;
   try { b = backup.create('manual', req.body.label); } catch (e) { fail(500, `Backup fehlgeschlagen: ${e.message}`); }
