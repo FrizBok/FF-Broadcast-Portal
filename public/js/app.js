@@ -48,7 +48,7 @@ function loginScreen(msg) {
     if (r.need2fa) return twofaScreen(r.ticket);
     await start();
   }, 'Anmelden');
-  authScreen(h('p', null, msg || 'Bitte melde dich an.'), f,
+  authScreen(h('p', null, msg || (pendingNext() ? 'Bitte melde dich an, um das Modul zu öffnen.' : 'Bitte melde dich an.')), f,
     h('div', { class: 'links' }, h('button', { type: 'button', onclick: forgotScreen }, 'Passwort vergessen?')));
 }
 
@@ -283,9 +283,21 @@ async function logout() {
   S.user = null; location.hash = ''; await start();
 }
 
+/** Nach der Anmeldung zurück zum Modul, das sie angefordert hat (/?next=/sso/<modul>) */
+function pendingNext() {
+  const n = new URLSearchParams(location.search).get('next') || '';
+  return /^\/sso\/[a-z0-9-]+$/.test(n) ? n : null;
+}
+
 async function start() {
   try { S.status = await get('/api/auth/status'); S.user = S.status.user; }
   catch (e) { return authScreen(h('p', null, e.message)); }
+  const next = pendingNext();
+  if (next && S.user && !S.user.must_change && !(S.user.must_2fa && !S.user.totp_enabled)) {
+    history.replaceState(null, '', '/' + location.hash);
+    location.assign(next);
+    return;
+  }
   render();
 }
 

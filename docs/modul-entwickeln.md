@@ -29,3 +29,22 @@ Regeln:
 - Plattform-Admins haben automatisch die höchste Rolle jedes Moduls. Wer keinen Eintrag hat, sieht das Modul nicht.
 - Ohne `url`/`path` zeigt die Kachel „Bald“ (z. B. `url: process.env.OVERLAY_URL || ''`).
 - Daten des Moduls gehören in `api.DATA_DIR` (eigene Datei oder eigene Tabellen mit Präfix `<id>_`).
+
+## Module als eigener Dienst (Single Sign-on)
+
+Läuft ein Modul als eigenes Programm (z. B. die Overlay Engine, Repo `Intracy/FF-Overlay`), meldet sich niemand dort
+separat an. Stattdessen:
+
+```js
+export const manifest = { id: 'overlay', …, url: process.env.OVERLAY_URL || '', sso: true };
+```
+
+- Die Kachel verlinkt dann auf `/sso/<id>`. Das Portal prüft Anmeldung und Modulrecht und leitet weiter zu
+  `<url>/auth/portal?ticket=…`.
+- Das Ticket ist 60 Sekunden gültig, enthält `sub, email, name, role, platform_admin, aud, exp, jti` und ist mit
+  HMAC-SHA256 signiert (`server/sso.js`). Schlüssel: Umgebungsvariable `<ID>_SSO_SECRET` (mind. 32 Zeichen), im Modul
+  identisch hinterlegt.
+- Das Modul prüft Signatur, `aud`, Ablauf und dass `jti` nur einmal benutzt wird, und öffnet eine eigene Sitzung mit der
+  Rolle. Rechte prüft das Modul selbst.
+- Fehlt Adresse oder Schlüssel, zeigt die Kachel „Bald“. Ohne Recht gibt `/sso/<id>` „Kein Zugriff“ zurück; beides
+  landet im Protokoll (`module_open`, `module_denied`).

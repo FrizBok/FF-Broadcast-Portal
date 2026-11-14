@@ -25,6 +25,10 @@ Mit Docker: `docker compose up -d` (Daten im Volume `/data`).
 
 Eigene Module: siehe [docs/modul-entwickeln.md](docs/modul-entwickeln.md).
 
+**Overlay Engine** (eigener Dienst, Repo [Intracy/FF-Overlay](https://github.com/Intracy/FF-Overlay)): Anmeldung läuft über das Portal.
+Im Portal `OVERLAY_URL` und `OVERLAY_SSO_SECRET` setzen, in der Overlay Engine `PORTAL_URL` und denselben Schlüssel als `PORTAL_SSO_SECRET`.
+Rollen: Operator (live steuern), Editor (gestalten), Overlay-Admin (Verbindungen, Projekte, Einstellungen).
+
 ## Stand
 
 Gerüst mit Oberfläche und API. Noch offen: FF Rundown als echtes Modul (bis dahin verlinkt `RUNDOWN_URL` auf die bestehende Installation).
