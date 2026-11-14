@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Q } from './db.js';
+import { ssoReady } from './sso.js';
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'modules');
 const ID_RE = /^[a-z][a-z0-9-]{1,30}$/;
@@ -80,7 +81,8 @@ export function setUserModules(userId, wanted) {
 }
 
 /** Beschreibung für die Oberfläche */
-export const publicManifest = (m) => ({
-  id: m.id, name: m.name, description: m.description || '', icon: m.icon || 'grid',
-  roles: m.roles, href: m.url || m.path || null, available: !!(m.url || m.path),
-});
+export const publicManifest = (m) => {
+  // Module mit eigenem Dienst und Single Sign-on öffnen über /sso/<id> (Portal stellt die Eintrittskarte aus)
+  const href = m.sso ? (ssoReady(m) ? `/sso/${m.id}` : null) : (m.url || m.path || null);
+  return { id: m.id, name: m.name, description: m.description || '', icon: m.icon || 'grid', roles: m.roles, href, available: !!href };
+};

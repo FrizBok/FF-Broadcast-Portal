@@ -10,6 +10,7 @@ import * as audit from './audit.js';
 import * as mail from './mail.js';
 import * as backup from './backup.js';
 import * as ann from './announce.js';
+import * as sso from './sso.js';
 import {
   hashPassword, verifyPassword, signToken, verifyToken, parseCookies, serializeCookie, sha256,
   newTotpSecret, verifyTotp, otpauthUrl, makeRecoveryCodes, hashRecovery, normalizeRecovery,
@@ -781,6 +782,34 @@ function tryStatic(req, res, pathname) {
   return false;
 }
 
+/* ================================================================== Single Sign-on für Module */
+function infoPage(res, status, title, text) {
+  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...SEC_HEADERS });
+  res.end(`<!doctype html><html lang="de" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} · FrankenFinals Broadcast</title>
+<link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/portal.css"></head><body><div class="auth-wrap"><div class="auth-card">
+<h1>${esc(title)}</h1><p class="ok-box">${esc(text)}</p><div class="links"><a href="/">Zur Übersicht</a></div></div></div></body></html>`);
+}
+
+function openModule(req, res, id) {
+  const m = moduleById(id);
+  if (!m || !m.sso) return infoPage(res, 404, 'Modul nicht gefunden', 'Dieses Modul gibt es nicht.');
+  if (!sso.ssoReady(m)) return infoPage(res, 503, 'Noch nicht eingerichtet', `${m.name} ist noch nicht mit dem Portal verbunden. Ein Admin muss Adresse und Schlüssel in der Server-Konfiguration eintragen.`);
+  const user = sessionUser(req)?.user;
+  if (!user || user.must_change || (user.must_2fa && !user.totp_enabled)) {
+    res.writeHead(302, { Location: '/?next=' + encodeURIComponent(`/sso/${id}`), 'Cache-Control': 'no-store', ...SEC_HEADERS });
+    return res.end();
+  }
+  const role = moduleRole(user, id);
+  if (!role) {
+    audit.log('module_denied', { actor: user, target: id, ip: clientIp(req), ok: false });
+    return infoPage(res, 403, 'Kein Zugriff', `Für ${m.name} hast du keine Freigabe. Frag einen Admin.`);
+  }
+  audit.log('module_open', { actor: user, target: id, ip: clientIp(req), detail: { role } });
+  res.writeHead(302, { Location: `${sso.ssoUrl(m)}/auth/portal?ticket=${encodeURIComponent(sso.ticketFor(m, user, role))}`, ...SEC_HEADERS, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+  res.end();
+}
+
 /* ================================================================== Server */
 const MUST_CHANGE_ALLOWED = ['/api/auth/status', '/api/auth/initial-password', '/api/auth/logout'];
 const MUST_2FA_ALLOWED = ['/api/auth/status', '/api/auth/logout', '/api/auth/password', '/api/me'];
@@ -792,6 +821,8 @@ const server = http.createServer(async (req, res) => {
 
     if (!pathname.startsWith('/api/')) {
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Nicht erlaubt' });
+      const ssoM = pathname.match(/^\/sso\/([a-z0-9-]+)\/?$/);
+      if (ssoM) return openModule(req, res, ssoM[1]);
       if (tryStatic(req, res, pathname)) return;
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SEC_HEADERS });
       return res.end('Nicht gefunden');
