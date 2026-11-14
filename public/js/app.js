@@ -152,7 +152,7 @@ const NAV = () => [
   { href: '#/', label: 'Übersicht', icon: 'grid', match: (p) => p === '' || p === '/' },
   S.user.role === 'admin' ? { href: '#/benutzer', label: 'Benutzer', icon: 'users', match: (p) => p.startsWith('/benutzer') } : null,
   S.user.role === 'admin' ? { href: '#/ankuendigungen', label: 'Ankündigungen', icon: 'bell', match: (p) => p.startsWith('/ankuendigungen') } : null,
-  S.user.role === 'admin' ? { href: '#/system', label: 'System', icon: 'shield', match: (p) => p.startsWith('/system'), dot: S.status?.alerts > 0 } : null,
+  S.user.role === 'admin' ? { href: '#/system', label: 'System', icon: 'database', match: (p) => p.startsWith('/system'), dot: S.status?.alerts > 0 } : null,
 ].filter(Boolean);
 
 function shell(path, ...content) {
