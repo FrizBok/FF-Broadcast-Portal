@@ -514,3 +514,117 @@ textarea.input { min-height: 110px; padding-top: 10px; resize: vertical; line-he
 .sys-head .sys-head-act { flex: none; padding-top: 22px; }
 .sys-head .sys-head-act:empty { display: none; }
 @media (max-width: 760px) { .sys-head { flex-wrap: wrap; } .sys-head .sys-head-act { padding-top: 0; } }
+
+/* =====================================================================
+   Grundgrößen und Seitenbreite wie in FF Rundown („Kompaktere Grundgröße“, .ov-page)
+   ===================================================================== */
+html, body { font-size: 14px; }
+.icon-btn { width: 34px; height: 34px; }
+.icon-btn .ico { width: 18px; height: 18px; }
+.page { padding: 26px max(16px, 1.5vw) 60px; max-width: 1500px; }
+h1, .h1 { font-size: clamp(22px, 2.2vw, 30px); }
+.btn { height: 36px; padding: 0 13px; font-size: 13.5px; gap: 8px; border-radius: 9px; }
+.btn .ico { width: 16px; height: 16px; }
+.btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
+.input, input.input, select.input { height: 38px; }
+.label, .page-head .label { font-size: 11px; }
+.sys-page { max-width: none; }
+.page-head .sub { line-height: 1.3; margin-top: 4px; }
+.chip { height: 22px; padding: 0 8px; font-size: 11.5px; }
+.u-row { padding: 12px 14px; }
+.u-who b { font-weight: 600; }
+.mod-card { padding: 18px; gap: 12px; min-height: 150px; }
+.mod-card h3 { font-size: 22px; }
+.mod-card p { font-size: 13.5px; }
+.mod-ico { width: 42px; height: 42px; border-radius: 12px; }
+.mod-ico .ico { width: 22px; height: 22px; }
+.card-pad h3 { font-size: 18px; }
+.section-title { font-size: 13px; margin: 26px 0 12px; }
+.ann-head h4 { font-size: 15.5px; }
+.ann-card { padding: 14px 16px 12px; }
+   Tablet und Handy (Verhalten wie in FF Rundown)
+   ===================================================================== */
+.nav a { white-space: nowrap; }
+.user-btn { flex: none; }
+.topbar .nav { min-width: 0; }
+
+/* Tablet (bis 1024 px): Markenname und Name am Benutzerknopf ausblenden, Menüpunkte bleiben beschriftet */
+@media (max-width: 1024px) {
+  .topbar { gap: 12px; }
+  .topbar .brand-name { display: none; }
+  .user-btn { padding: 0 4px; height: 42px; }
+  .user-btn-txt, .user-btn > .ico { display: none; }
+  .page { padding-left: 20px; padding-right: 20px; }
+  .sys-layout { grid-template-columns: 220px minmax(0, 1fr); gap: 24px; }
+}
+
+/* Handy (bis 760 px): Menüpunkte nur als Icons, kompaktere Leiste */
+@media (max-width: 760px) {
+  .topbar { height: 56px; gap: 8px; }
+  .topbar .nav { padding: 3px; }
+  .topbar .nav a { padding: 7px 10px; gap: 0; }
+  .topbar .nav a .nav-lbl { display: none; }
+  .topbar .nav a .dot { position: absolute; margin: -14px 0 0 14px; }
+  .topbar .nav a { position: relative; }
+  .user-btn { height: 40px; }
+  .theme-toggle { width: 56px; }
+  .theme-toggle[data-mode='light'] .tt-knob { transform: translateX(24px); }
+  .page { padding: 18px 16px 60px; }
+  .page-head h1 { font-size: 30px; }
+}
+/* Sehr schmal: Umschalter Hell/Dunkel steckt im Benutzermenü */
+@media (max-width: 400px) {
+  .topbar .theme-toggle { display: none; }
+  .topbar .spacer { min-width: 0; }
+}
+
+/* Kopfbereich mit Aktionsknopf: am Handy Knopf unter den Titel, volle Breite */
+@media (max-width: 600px) {
+  .page-head.row { flex-direction: column; align-items: stretch; gap: 14px; }
+  .page-head.row > .spacer { display: none; }
+  .page-head.row > .btn { width: 100%; justify-content: center; }
+  .page-head .sub { font-size: 14px; }
+}
+
+/* Benutzerliste: Aktionen oben rechts, Rechte darunter über die volle Breite */
+@media (max-width: 860px) {
+  .u-row { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 12px; }
+  .u-row > .u-actions { grid-row: 1; grid-column: 3; align-self: start; }
+  .u-row > .u-meta { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .u-tools { flex-direction: column; align-items: stretch; }
+  .u-tools .input, .u-tools select { max-width: none !important; width: 100% !important; }
+  .u-row { padding: 12px 14px; gap: 10px 12px; }
+  .u-who span:nth-child(3) { display: none; } /* „Letzter Login“ am Handy weglassen */
+  .ann-row .u-meta .hint { -webkit-line-clamp: 3; }
+}
+
+/* Dialoge am Handy: fast volle Höhe, Modul-Rechte untereinander */
+@media (max-width: 600px) {
+  .matrix-row { flex-wrap: wrap; }
+  .matrix-row .txt span { display: none; }
+  .matrix-row select { width: 100%; min-width: 0; flex: 1 1 100%; }
+  .pick-list { max-height: 220px; }
+  .copy-field { flex-direction: column; }
+  .qr-img { width: 160px; height: 160px; }
+  .codes { grid-template-columns: 1fr 1fr; }
+  .card-pad { padding: 18px 16px; }
+  .setting-row .switch { margin-left: auto; }
+}
+
+/* Protokoll am Handy: Zeilen als kompakte Karten statt breiter Tabelle */
+@media (max-width: 600px) {
+  .table-wrap { padding: 0; border: 0; background: none; }
+  .log-table, .log-table tbody, .log-table tr, .log-table td { display: block; width: 100%; }
+  .log-table thead { display: none; }
+  .log-table tr { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--card-border); }
+  .log-table td { padding: 2px 0; border: 0; }
+  .log-table td.t { font-size: 12px; }
+  .log-table td:last-child:not(:empty)::before { content: 'IP '; color: var(--muted); }
+}
+
+/* Tablet: Kacheln zweispaltig, Formulare zweispaltig */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .mod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
