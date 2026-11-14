@@ -1,8 +1,10 @@
 // Modul „FF Rundown“ – Ablaufplan & Live-Steuerung.
 //
-// Aktuell nur eine Verknüpfung: Solange der Rundown noch nicht ins Portal umgezogen ist, zeigt die Kachel
-// auf die bestehende Installation (Umgebungsvariable RUNDOWN_URL, z. B. https://ffrundown.fl-tecmedia.de).
-// Die Rollen sind schon die späteren Modul-Rollen und werden pro Person im Portal vergeben.
+// Läuft als eigener Dienst (Repo Intracy/FF-Rundown) und kann auch ganz ohne Portal betrieben werden.
+// Mit dem Portal verbunden (RUNDOWN_URL + RUNDOWN_SSO_SECRET, im Rundown als PORTAL_URL + PORTAL_SSO_SECRET):
+// Anmeldung per Single Sign-on, Konten werden im Rundown automatisch angelegt bzw. per E-Mail verknüpft,
+// Gäste aus dem Portal sind dort „extern“ und sehen nur freigegebene Rundowns.
+// Ohne Schlüssel verlinkt die Kachel einfach auf RUNDOWN_URL (Anmeldung dann im Rundown selbst).
 
 export const manifest = {
   id: 'rundown',
@@ -18,4 +20,5 @@ export const manifest = {
   ],
   // Ziel der Kachel; leer = Modul ist noch nicht verfügbar („Bald“)
   url: process.env.RUNDOWN_URL || '',
+  sso: true,
 };
