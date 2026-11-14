@@ -13,7 +13,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'ffp-test-'));
 let proc;
 const SECRET = 'x'.repeat(40);
-import { verifyTicket, ssoReady } from '../server/sso.js';
+import { verifyTicket, ssoReady, normalizeBaseUrl } from '../server/sso.js';
 
 function client() {
   let cookie = '';
@@ -70,6 +70,7 @@ test('Overlay-Kachel öffnet per Eintrittskarte mit der Rolle aus dem Portal', a
   assert.equal(t.role, 'admin');
   assert.equal(t.email, 'chef@example.de');
   assert.equal(t.platform_admin, true);
+  assert.equal(t.kind, 'member');
   assert.ok(t.exp - t.iat <= 60);
   assert.equal(verifyTicket(u.searchParams.get('ticket'), 'falscher-schluessel'.repeat(3), 'overlay'), null);
   assert.equal(verifyTicket(u.searchParams.get('ticket'), SECRET, 'rundown'), null);
@@ -99,6 +100,19 @@ test('Overlay-Kachel öffnet per Eintrittskarte mit der Rolle aus dem Portal', a
   assert.ok(log.includes('module_open') && log.includes('module_denied'));
 });
 
+test('Rundown-Kachel: ohne Schlüssel normaler Link, Gäste werden im Ticket gekennzeichnet', async () => {
+  const owner = client();
+  await owner.post('/api/auth/login', { email: 'chef@example.de', password: PW });
+  // In diesem Testserver ist RUNDOWN_URL leer → „Bald“
+  assert.equal((await owner.get('/api/modules')).data.find((m) => m.id === 'rundown').available, false);
+  await owner.post('/api/users', { email: 'gast@extern.de', kind: 'guest', mode: 'password', password: PW, modules: { overlay: 'operator' } });
+  const g = client();
+  await g.post('/api/auth/login', { email: 'gast@extern.de', password: PW });
+  await g.post('/api/auth/initial-password', { password: PW + 'x' });
+  const t = verifyTicket(new URL((await g.open('/sso/overlay')).location).searchParams.get('ticket'), SECRET, 'overlay');
+  assert.equal(t.kind, 'guest');
+});
+
 test('Kachel zeigt „Bald“, solange Adresse oder Schlüssel fehlen', () => {
   const m = { id: 'overlay', sso: true, url: 'https://o.example.de' };
   const old = process.env.OVERLAY_SSO_SECRET;
@@ -108,4 +122,11 @@ test('Kachel zeigt „Bald“, solange Adresse oder Schlüssel fehlen', () => {
   assert.equal(ssoReady(m), true);
   assert.equal(ssoReady({ ...m, url: '' }), false);
   process.env.OVERLAY_SSO_SECRET = old ?? '';
+});
+
+test('OVERLAY_URL ohne https:// oder mit Slash/Pfad wird richtig gelesen', () => {
+  assert.equal(normalizeBaseUrl('overlay.example.de'), 'https://overlay.example.de');
+  assert.equal(normalizeBaseUrl('https://overlay.example.de/'), 'https://overlay.example.de');
+  assert.equal(normalizeBaseUrl('http://127.0.0.1:3500/login'), 'http://127.0.0.1:3500');
+  assert.equal(normalizeBaseUrl(''), '');
 });

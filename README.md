@@ -29,6 +29,11 @@ Eigene Module: siehe [docs/modul-entwickeln.md](docs/modul-entwickeln.md).
 Im Portal `OVERLAY_URL` und `OVERLAY_SSO_SECRET` setzen, in der Overlay Engine `PORTAL_URL` und denselben Schlüssel als `PORTAL_SSO_SECRET`.
 Rollen: Operator (live steuern), Editor (gestalten), Overlay-Admin (Verbindungen, Projekte, Einstellungen).
 
+**FF Rundown** (eigener Dienst, Repo [Intracy/FF-Rundown](https://github.com/Intracy/FF-Rundown), läuft auch allein): Im Portal `RUNDOWN_URL` und
+`RUNDOWN_SSO_SECRET` setzen, im Rundown `PORTAL_URL` und denselben Schlüssel als `PORTAL_SSO_SECRET`. Konten entstehen im Rundown beim ersten
+Öffnen über die Kachel (bestehende Konten werden über die E-Mail verknüpft), Gäste aus dem Portal sind dort „extern“.
+Ohne Schlüssel verlinkt die Kachel nur auf `RUNDOWN_URL`.
+
 ## Stand
 
 Gerüst mit Oberfläche und API. Noch offen: FF Rundown als echtes Modul (bis dahin verlinkt `RUNDOWN_URL` auf die bestehende Installation).

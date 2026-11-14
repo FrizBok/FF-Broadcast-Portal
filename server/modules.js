@@ -82,7 +82,8 @@ export function setUserModules(userId, wanted) {
 
 /** Beschreibung für die Oberfläche */
 export const publicManifest = (m) => {
-  // Module mit eigenem Dienst und Single Sign-on öffnen über /sso/<id> (Portal stellt die Eintrittskarte aus)
-  const href = m.sso ? (ssoReady(m) ? `/sso/${m.id}` : null) : (m.url || m.path || null);
+  // Module mit eigenem Dienst und Single Sign-on öffnen über /sso/<id> (Portal stellt die Eintrittskarte aus).
+  // Ohne Schlüssel führt die Kachel einfach zur Adresse des Moduls (Anmeldung dann dort selbst).
+  const href = m.sso && ssoReady(m) ? `/sso/${m.id}` : (m.url || m.path || null);
   return { id: m.id, name: m.name, description: m.description || '', icon: m.icon || 'grid', roles: m.roles, href, available: !!href };
 };

@@ -46,5 +46,5 @@ export const manifest = { id: 'overlay', …, url: process.env.OVERLAY_URL || ''
   identisch hinterlegt.
 - Das Modul prüft Signatur, `aud`, Ablauf und dass `jti` nur einmal benutzt wird, und öffnet eine eigene Sitzung mit der
   Rolle. Rechte prüft das Modul selbst.
-- Fehlt Adresse oder Schlüssel, zeigt die Kachel „Bald“. Ohne Recht gibt `/sso/<id>` „Kein Zugriff“ zurück; beides
+- Ohne Schlüssel ist die Kachel ein normaler Link auf `url` (Anmeldung im Modul selbst), ohne Adresse zeigt sie „Bald“. Ohne Recht gibt `/sso/<id>` „Kein Zugriff“ zurück; beides
   landet im Protokoll (`module_open`, `module_denied`).
