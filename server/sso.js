@@ -5,7 +5,7 @@
 // die Unterschrift mit demselben Schlüssel und öffnet eine eigene Sitzung mit der Rolle aus dem Portal.
 //
 // Ticket = base64url(JSON) "." base64url(HMAC-SHA256(Schlüssel, base64url(JSON)))
-// Inhalt:  { v: 1, iss: 'ff-broadcast-portal', aud: <modul-id>, sub, email, name, role, platform_admin,
+// Inhalt:  { v: 1, iss: 'ff-broadcast-portal', aud: <modul-id>, sub, email, name, role, kind (member|guest), platform_admin,
 //            iat, exp (iat + 60 s), jti (zufällig, nur einmal gültig) }
 // Schlüssel: Umgebungsvariable <MODUL>_SSO_SECRET (z. B. OVERLAY_SSO_SECRET), im Modul identisch hinterlegt.
 import crypto from 'node:crypto';
@@ -47,6 +47,6 @@ export function ticketFor(m, user, role) {
   const iat = Math.floor(Date.now() / 1000);
   return signTicket({
     v: 1, iss: 'ff-broadcast-portal', aud: m.id, sub: String(user.id), email: user.email, name: user.name || '',
-    role, platform_admin: user.role === 'admin', iat, exp: iat + TICKET_SECONDS, jti: crypto.randomBytes(16).toString('hex'),
+    role, kind: user.kind || 'member', platform_admin: user.role === 'admin', iat, exp: iat + TICKET_SECONDS, jti: crypto.randomBytes(16).toString('hex'),
   }, ssoSecret(m));
 }

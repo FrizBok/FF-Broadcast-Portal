@@ -2,7 +2,7 @@
 //
 // Läuft als eigener Dienst (Repo Intracy/FF-Overlay). Anmeldung per Single Sign-on über das Portal:
 // OVERLAY_URL = Adresse der Overlay Engine, OVERLAY_SSO_SECRET = gemeinsamer Schlüssel (in der Overlay Engine
-// als PORTAL_SSO_SECRET). Fehlt eins davon, zeigt die Kachel „Bald“.
+// als PORTAL_SSO_SECRET). Ohne Schlüssel verlinkt die Kachel nur auf OVERLAY_URL, ohne Adresse zeigt sie „Bald“.
 
 export const manifest = {
   id: 'overlay',
