@@ -159,6 +159,7 @@ function shell(path, ...content) {
   const u = S.user;
   const userBtn = h('button', { class: 'user-btn', onclick: (e) => menu(e.currentTarget, [
     { label: 'Mein Konto', icon: 'user', onClick: () => { location.hash = '#/konto'; } },
+    { label: document.documentElement.dataset.theme === 'light' ? 'Dunkles Design' : 'Helles Design', icon: document.documentElement.dataset.theme === 'light' ? 'moon' : 'sun', onClick: () => document.querySelector('.topbar .theme-toggle')?.click() },
     { sep: true },
     { label: 'Abmelden', icon: 'logout', onClick: logout },
   ]) },
@@ -167,7 +168,7 @@ function shell(path, ...content) {
   fill(root,
     h('header', { class: 'topbar' },
       h('a', { href: '#/' }, brand()),
-      h('nav', { class: 'nav' }, NAV().map((n) => h('a', { href: n.href, class: n.match(path) ? 'active' : '' }, icon(n.icon), n.label, n.dot ? h('span', { class: 'dot' }) : null))),
+      h('nav', { class: 'nav' }, NAV().map((n) => h('a', { href: n.href, class: n.match(path) ? 'active' : '', title: n.label, 'aria-label': n.label }, icon(n.icon), h('span', { class: 'nav-lbl' }, n.label), n.dot ? h('span', { class: 'dot' }) : null))),
       h('div', { class: 'spacer' }), themeToggle(), userBtn),
     h('main', { class: 'page' }, ...content));
 }
