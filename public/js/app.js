@@ -162,8 +162,8 @@ function shell(path, ...content) {
     { sep: true },
     { label: 'Abmelden', icon: 'logout', onClick: logout },
   ]) },
-    h('span', { class: 'avatar ' + roleClass(u), style: { width: '32px', height: '32px', fontSize: '12px' } }, initials(u)),
-    h('span', { class: 'user-btn-txt' }, h('b', null, u.name || u.email), h('span', null, roleName(u))), icon('more'));
+    h('span', { class: 'avatar sm ' + roleClass(u) }, initials(u)),
+    h('span', { class: 'user-btn-txt' }, h('b', null, u.name || u.email), h('span', null, roleName(u))), icon('chevronDown'));
   fill(root,
     h('header', { class: 'topbar' },
       h('a', { href: '#/' }, brand()),
