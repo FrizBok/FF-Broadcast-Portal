@@ -14,7 +14,14 @@ export const TICKET_SECONDS = 60;
 const b64 = (buf) => Buffer.from(buf).toString('base64url');
 
 export const ssoSecret = (m) => (process.env[`${m.id.toUpperCase().replace(/-/g, '_')}_SSO_SECRET`] || '').trim();
-export const ssoUrl = (m) => String(m.url || '').replace(/\/+$/, '');
+/** Adresse vereinheitlichen: ohne http(s):// wird https:// ergänzt, Pfad und Slash am Ende fallen weg */
+export function normalizeBaseUrl(raw) {
+  let v = String(raw || '').trim().replace(/^["']|["']$/g, '');
+  if (!v) return '';
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v.replace(/^\/+/, '');
+  try { return new URL(v).origin; } catch { return ''; }
+}
+export const ssoUrl = (m) => normalizeBaseUrl(m.url);
 /** Modul ist für Single Sign-on fertig eingerichtet (Adresse und mind. 32 Zeichen Schlüssel) */
 export const ssoReady = (m) => !!(m.sso && ssoUrl(m) && ssoSecret(m).length >= 32);
 

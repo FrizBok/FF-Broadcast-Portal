@@ -13,7 +13,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'ffp-test-'));
 let proc;
 const SECRET = 'x'.repeat(40);
-import { verifyTicket, ssoReady } from '../server/sso.js';
+import { verifyTicket, ssoReady, normalizeBaseUrl } from '../server/sso.js';
 
 function client() {
   let cookie = '';
@@ -108,4 +108,11 @@ test('Kachel zeigt „Bald“, solange Adresse oder Schlüssel fehlen', () => {
   assert.equal(ssoReady(m), true);
   assert.equal(ssoReady({ ...m, url: '' }), false);
   process.env.OVERLAY_SSO_SECRET = old ?? '';
+});
+
+test('OVERLAY_URL ohne https:// oder mit Slash/Pfad wird richtig gelesen', () => {
+  assert.equal(normalizeBaseUrl('overlay.example.de'), 'https://overlay.example.de');
+  assert.equal(normalizeBaseUrl('https://overlay.example.de/'), 'https://overlay.example.de');
+  assert.equal(normalizeBaseUrl('http://127.0.0.1:3500/login'), 'http://127.0.0.1:3500');
+  assert.equal(normalizeBaseUrl(''), '');
 });
