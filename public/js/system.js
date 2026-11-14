@@ -2,16 +2,67 @@ import { h, icon, toast, fill, modal, confirmDialog, copyText, confirmTyped } fr
 import { get, post, put, del, fmtDateTime } from './api.js';
 import { S } from './app.js';
 
-const TABS = [['mail', 'E-Mail-Versand', 'send'], ['sicherheit', 'Sicherheit', 'shield'], ['protokoll', 'Protokoll', 'list'], ['backups', 'Backups', 'database']];
+// Aufbau wie in FF Rundown: links die Bereiche mit Kurzstatus, rechts Überschrift, Aktionen und Inhalt
+const SECTIONS = [
+  { id: 'backups', label: 'Backups', icon: 'database', intro: 'Sicherungen der kompletten Datenbank: Benutzer, Modul-Rechte, Gruppen, Ankündigungen und Einstellungen.' },
+  { id: 'mail', label: 'E-Mail-Versand', icon: 'send', intro: 'Einladungen, „Passwort vergessen“ und Ankündigungen per E-Mail.' },
+  { id: 'sicherheit', label: 'Sicherheit', icon: 'lock', intro: 'Zwei-Faktor-Anmeldung für alle Konten.' },
+  { id: 'protokoll', label: 'Protokoll', icon: 'shield', intro: 'Anmeldungen, Konten, E-Mails und System-Ereignisse – nur für Admins sichtbar.' },
+];
+const sysPhone = () => matchMedia('(max-width: 760px)').matches;
 
-export async function systemPage(ctx, tab) {
-  if (!TABS.some((t) => t[0] === tab)) tab = 'mail';
+function relTime(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return 'gerade eben';
+  if (m < 60) return `vor ${m} Min.`;
+  const hrs = Math.round(m / 60);
+  if (hrs < 24) return `vor ${hrs} Std.`;
+  const d = Math.round(hrs / 24);
+  return d === 1 ? 'vor 1 Tag' : `vor ${d} Tagen`;
+}
+
+/** Kurzstatus je Bereich: { sub, dot } */
+function navStatus(sum) {
+  const b = sum.backups, a = sum.audit, sec = sum.security;
+  const fresh = b.latest && Date.now() - b.latest < (b.settings.interval_hours || 6) * 2 * 3600e3;
+  return {
+    backups: { sub: b.latest ? `Zuletzt ${relTime(b.latest)}` : 'Noch keine Sicherung', dot: !b.settings.enabled || !b.latest ? 'warn' : fresh ? 'ok' : 'warn' },
+    mail: { sub: sum.mail.enabled ? 'Eingerichtet' : 'Nicht eingerichtet', dot: sum.mail.enabled ? 'ok' : 'warn' },
+    sicherheit: { sub: `2FA ${sec.policy === 'required' ? 'Pflicht' : 'freiwillig'} · ${sec.users_with_2fa}/${sec.users_active} aktiv`, dot: '' },
+    protokoll: { sub: `${a.total} Einträge · ${a.retention_days} Tage`, dot: a.login_fails_24h + a.mail_fails_24h ? 'err' : '' },
+  };
+}
+
+export async function systemPage(ctx, section) {
+  if (section && !SECTIONS.some((x) => x.id === section)) { history.replaceState(null, '', '#/system'); section = ''; }
+  const listOnly = !section && sysPhone();
+  const sec = SECTIONS.find((x) => x.id === section) || SECTIONS[0];
+  let status = {};
+  const navBox = h('nav', { class: 'sys-nav' + (listOnly ? ' sys-nav-list' : '') });
+  const drawNav = () => fill(navBox, SECTIONS.map((x) => h('a', { class: 'sys-nav-item' + (!listOnly && x.id === sec.id ? ' active' : ''), href: '#/system/' + x.id },
+    h('span', { class: 'sys-nav-ico' }, icon(x.icon)),
+    h('span', { class: 'sys-nav-txt' }, h('b', null, x.label), h('small', null, status[x.id]?.sub || '…')),
+    status[x.id]?.dot ? h('span', { class: 'sys-dot ' + status[x.id].dot, title: status[x.id].sub }) : null,
+    h('span', { class: 'sys-nav-chev' }, icon('chevronRight')))));
+  const refreshNav = async () => { try { status = navStatus(await get('/api/system/summary')); drawNav(); } catch { /* */ } };
+  drawNav();
+
+  const actions = h('div', { class: 'sys-head-act' });
   const body = h('div');
-  ctx.shell('/system',
-    h('div', { class: 'page-head' }, h('span', { class: 'label' }, 'VERWALTUNG'), h('h1', null, 'System')),
-    h('nav', { class: 'tabs' }, TABS.map(([id, l, ic]) => h('a', { href: '#/system/' + id, class: id === tab ? 'active' : '' }, icon(ic), l))),
-    body);
-  try { await ({ mail: mailTab, sicherheit: securityTab, protokoll: logTab, backups: backupTab })[tab](ctx, body); }
+  const head = h('div', { class: 'page-head sys-head' },
+    h('div', null,
+      sysPhone() ? h('a', { class: 'sys-back', href: '#/system' }, icon('arrowLeft'), 'System') : h('span', { class: 'label' }, 'SYSTEM'),
+      h('h1', null, sec.label),
+      h('p', { class: 'sub', style: { marginTop: '4px' } }, sec.intro)),
+    actions);
+  ctx.shell('/system', h('div', { class: 'sys-page' },
+    listOnly
+      ? [h('div', { class: 'page-head' }, h('span', { class: 'label' }, 'VERWALTUNG'), h('h1', null, 'System')), navBox]
+      : h('div', { class: 'sys-layout' }, sysPhone() ? null : navBox, h('div', { class: 'sys-main' }, head, body))));
+  refreshNav();
+  if (listOnly) return;
+  const sctx = { ...ctx, actions, refreshNav };
+  try { await ({ mail: mailTab, sicherheit: securityTab, protokoll: logTab, backups: backupTab })[sec.id](sctx, body); }
   catch (e) { fill(body, h('div', { class: 'empty' }, e.message)); }
 }
 
@@ -31,14 +82,14 @@ async function mailTab(ctx, body) {
     err.textContent = '';
     try {
       await put('/api/system/mail', { host: host.value, port: port.value, secure: secure.value, user: user.value, pass: pass.value || undefined, from_email: fromEmail.value, from_name: fromName.value, app_url: appUrl.value, notify: { password: pw.checked } });
-      toast('Gespeichert', 'ok'); mailTab(ctx, body);
+      toast('Gespeichert', 'ok'); ctx.refreshNav?.(); mailTab(ctx, body);
     } catch (e) { err.textContent = e.message; }
   };
   const test = async () => {
     err.textContent = '';
     try { const r = await post('/api/system/mail/test', {}); toast('Testmail an ' + r.to + ' gesendet', 'ok'); } catch (e) { err.textContent = e.message; }
   };
-  fill(body, h('div', { class: 'page-narrow card card-pad', style: { margin: '0' } },
+  fill(body, h('div', { class: 'card card-pad' },
     h('h3', null, 'SMTP-Zugang'),
     h('span', { class: 'hint' }, 'Wird für Einladungen und „Passwort vergessen“ gebraucht. ' + (c.enabled ? 'Der Versand ist eingerichtet.' : 'Noch nicht eingerichtet – ohne Mail gibt es Links nur zum Kopieren.')),
     lock ? h('p', { class: 'hint warn' }, 'Die Einstellungen sind per Umgebungsvariablen (SMTP_HOST …) festgelegt und hier nicht änderbar.') : null,
@@ -53,10 +104,10 @@ async function securityTab(ctx, body) {
   const owner = S.user.owner;
   const sw = h('input', { type: 'checkbox', checked: s.twofa_policy === 'required', disabled: !owner || (!S.user.totp_enabled && s.twofa_policy !== 'required') });
   sw.addEventListener('change', async () => {
-    try { await put('/api/system/security', { twofa_policy: sw.checked ? 'required' : 'optional' }); toast('Gespeichert', 'ok'); securityTab(ctx, body); }
+    try { await put('/api/system/security', { twofa_policy: sw.checked ? 'required' : 'optional' }); toast('Gespeichert', 'ok'); ctx.refreshNav?.(); securityTab(ctx, body); }
     catch (e) { sw.checked = !sw.checked; toast(e.message, 'err'); }
   });
-  fill(body, h('div', { class: 'page-narrow card card-pad', style: { margin: '0' } },
+  fill(body, h('div', { class: 'card card-pad' },
     h('h3', null, 'Zwei-Faktor-Anmeldung'),
     h('div', { class: 'setting-row' },
       h('div', { class: 'txt' }, h('b', null, '2FA für alle verpflichtend'),
@@ -141,11 +192,11 @@ async function backupTab(ctx, body) {
   const err = h('div', { class: 'form-error' });
   const create = async () => { try { await post('/api/system/backups', {}); toast('Backup erstellt', 'ok'); reload(); } catch (e) { err.textContent = e.message; } };
   const file = h('input', { type: 'file', accept: '.db,application/octet-stream', style: { display: 'none' }, onchange: (e) => uploadBackup(e.target.files[0], reload) });
+  fill(ctx.actions,
+    owner ? h('button', { class: 'btn', onclick: () => file.click() }, icon('upload'), 'Backup hochladen') : null, file,
+    h('button', { class: 'btn primary', onclick: create }, icon('database'), 'Jetzt sichern'));
+  ctx.refreshNav?.();
   fill(body,
-    h('div', { class: 'row', style: { marginBottom: '8px' } },
-      h('div', { class: 'spacer' }),
-      owner ? h('button', { class: 'btn', onclick: () => file.click() }, icon('upload'), 'Backup hochladen') : null, file,
-      h('button', { class: 'btn primary', onclick: create }, icon('database'), 'Backup jetzt erstellen')),
     h('p', { class: 'hint', style: { margin: '0 0 14px' } }, (r.settings.enabled ? `Automatisch alle ${r.settings.interval_hours} Stunden, die letzten ${r.settings.keep} bleiben erhalten. Manuelle und hochgeladene Sicherungen werden nie automatisch gelöscht.` : 'Automatische Sicherungen sind ausgeschaltet.')
       + (owner ? ' Mit ↺ spielst du eine Sicherung zurück; vorher wird der aktuelle Stand gesichert.' : ' Zurückspielen und Hochladen darf nur der Super-Admin.')),
     err,

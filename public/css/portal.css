@@ -469,3 +469,48 @@ textarea.input { min-height: 110px; padding-top: 10px; resize: vertical; line-he
 .topbar .nav a { padding: 6px 13px; font-size: 14px; }
 .topbar .brand-mark { width: 36px; height: 36px; }
 .topbar .brand-mark .ico { width: 24px; height: 24px; }
+
+/* ===== System: Bereichsliste links wie in FF Rundown ===== */
+.sys-page { max-width: 1160px; margin: 0 auto; }
+.sys-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; align-items: start; }
+.sys-nav { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 84px; }
+.sys-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: var(--text-2); text-decoration: none; border: 1px solid transparent; }
+.sys-nav-item:hover { background: var(--surface); color: var(--text); }
+.sys-nav-item.active { background: var(--surface); border-color: var(--border); color: var(--text); }
+.sys-nav-item.active .sys-nav-ico { background: var(--accent); color: #fff; }
+.sys-nav-ico { flex: none; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--accent-2); }
+.sys-nav-ico .ico { width: 17px; height: 17px; }
+.sys-nav-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.sys-nav-txt b { font-size: 14.5px; font-weight: 600; }
+.sys-nav-txt small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sys-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.sys-dot.ok { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 20%, transparent); }
+.sys-dot.warn { background: var(--yellow); box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 20%, transparent); }
+.sys-dot.err { background: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent); }
+.sys-nav-chev { display: none; color: var(--muted); }
+.sys-nav-chev .ico { width: 18px; height: 18px; }
+.sys-main { min-width: 0; }
+.sys-head { margin-bottom: 20px; }
+.sys-head h1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sys-head h1 .st-badge { font-size: 12px; }
+.sys-head-act { display: flex; gap: 8px; flex-wrap: wrap; }
+.sys-back { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-2); text-decoration: none; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.sys-back .ico { width: 16px; height: 16px; }
+/* Handy: Liste wie in den iOS-Einstellungen */
+.sys-nav-list { position: static; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.sys-nav-list .sys-nav-item { border-radius: 0; padding: 14px 14px; border: 0; border-bottom: 1px solid var(--border); color: var(--text); }
+.sys-nav-list .sys-nav-item:last-child { border-bottom: 0; }
+.sys-nav-list .sys-nav-chev { display: flex; }
+@media (max-width: 760px) {
+  .sys-layout { display: block; }
+  .sys-head-act { width: 100%; }
+  .sys-head-act .btn { flex: 1; justify-content: center; }
+}
+.sys-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.sys-head .sub { margin-top: 4px; }
+.sys-main > div > .card + .card, .sys-main .card-pad + .card-pad { margin-top: 16px; }
+.sys-head { flex-wrap: nowrap; }
+.sys-head > div:first-child { flex: 1; min-width: 0; }
+.sys-head .sys-head-act { flex: none; padding-top: 22px; }
+.sys-head .sys-head-act:empty { display: none; }
+@media (max-width: 760px) { .sys-head { flex-wrap: wrap; } .sys-head .sys-head-act { padding-top: 0; } }
