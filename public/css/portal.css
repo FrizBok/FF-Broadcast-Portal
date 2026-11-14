@@ -514,3 +514,31 @@ textarea.input { min-height: 110px; padding-top: 10px; resize: vertical; line-he
 .sys-head .sys-head-act { flex: none; padding-top: 22px; }
 .sys-head .sys-head-act:empty { display: none; }
 @media (max-width: 760px) { .sys-head { flex-wrap: wrap; } .sys-head .sys-head-act { padding-top: 0; } }
+
+/* =====================================================================
+   Grundgrößen und Seitenbreite wie in FF Rundown („Kompaktere Grundgröße“, .ov-page)
+   ===================================================================== */
+html, body { font-size: 14px; }
+.icon-btn { width: 34px; height: 34px; }
+.icon-btn .ico { width: 18px; height: 18px; }
+.page { padding: 26px max(16px, 1.5vw) 60px; max-width: 1500px; }
+h1, .h1 { font-size: clamp(22px, 2.2vw, 30px); }
+.btn { height: 36px; padding: 0 13px; font-size: 13.5px; gap: 8px; border-radius: 9px; }
+.btn .ico { width: 16px; height: 16px; }
+.btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
+.input, input.input, select.input { height: 38px; }
+.label, .page-head .label { font-size: 11px; }
+.sys-page { max-width: none; }
+.page-head .sub { line-height: 1.3; margin-top: 4px; }
+.chip { height: 22px; padding: 0 8px; font-size: 11.5px; }
+.u-row { padding: 12px 14px; }
+.u-who b { font-weight: 600; }
+.mod-card { padding: 18px; gap: 12px; min-height: 150px; }
+.mod-card h3 { font-size: 22px; }
+.mod-card p { font-size: 13.5px; }
+.mod-ico { width: 42px; height: 42px; border-radius: 12px; }
+.mod-ico .ico { width: 22px; height: 22px; }
+.card-pad h3 { font-size: 18px; }
+.section-title { font-size: 13px; margin: 26px 0 12px; }
+.ann-head h4 { font-size: 15.5px; }
+.ann-card { padding: 14px 16px 12px; }

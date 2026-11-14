@@ -246,7 +246,7 @@ async function accountPage() {
       { name: 'code', label: 'Aktueller Code aus der App', required: true, autocomplete: 'one-time-code' }],
     onSubmit: async (v) => { await post('/api/me/2fa/disable', v); toast('2FA ausgeschaltet', 'ok'); paintTf(); } });
   };
-  shell('/konto', h('div', { class: 'page-narrow', style: { margin: '0 auto' } },
+  shell('/konto', h('div', { class: 'page-narrow' },
     h('div', { class: 'page-head' }, h('span', { class: 'label' }, 'KONTO'), h('h1', null, 'Mein Konto'),
       h('p', { class: 'sub' }, h('span', { class: 'role-badge ' + roleClass(u) }, roleName(u)), u.expires_at ? ` · Zugang bis ${new Date(u.expires_at).toLocaleDateString('de-DE')}` : '')),
     h('div', { class: 'card card-pad' }, h('h3', null, 'Profil'), nameF),
