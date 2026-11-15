@@ -628,3 +628,26 @@ h1, .h1 { font-size: clamp(22px, 2.2vw, 30px); }
 @media (min-width: 601px) and (max-width: 1024px) {
   .mod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Startseite: „Deine nächsten Einsätze“ (aus der Terminplanung) */
+.duty-box { margin-top: 6px; }
+.duty-list { display: grid; gap: 8px; }
+.duty { display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px 10px 10px; border-radius: 14px; background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: var(--elev-1); transition: border-color .15s; }
+.duty:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border)); }
+.duty.pending { border-style: dashed; border-color: color-mix(in srgb, #f59e0b 55%, var(--card-border)); }
+.duty-date { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; border-radius: 11px; background: var(--surface-2); line-height: 1; }
+.duty-date b { font-family: var(--font-cond); font-size: 22px; }
+.duty-date span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin-top: 2px; }
+.duty-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.duty-main b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duty-main span { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.duty-side { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.duty-hint, .duty-all { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 13.5px; color: var(--text-2); }
+.duty-hint { display: flex; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 10%, var(--bg-2)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--card-border)); color: var(--text); }
+.duty-hint .ico:last-child { margin-left: auto; }
+.duty-hint .ico, .duty-all .ico { width: 15px; height: 15px; }
+.duty-all:hover, .duty-hint:hover { color: var(--accent-2); }
+@media (max-width: 600px) {
+  .duty { grid-template-columns: 46px minmax(0, 1fr); }
+  .duty-side { grid-column: 2; justify-content: flex-start; }
+}

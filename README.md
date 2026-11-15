@@ -37,6 +37,7 @@ Ohne Schlüssel verlinkt die Kachel nur auf `RUNDOWN_URL`.
 **Terminplanung** (eigener Dienst, Repo [FrizBok/FF-Planner](https://github.com/FrizBok/FF-Planner)): Im Portal `PLANNER_URL` und
 `PLANNER_SSO_SECRET` setzen, in der Terminplanung `PORTAL_URL` und denselben Schlüssel als `PORTAL_SSO_SECRET`. Mit demselben Schlüssel
 holt sie die Liste der Personen mit Zugriff (`/api/modules/planner/directory`). Rollen: Mitglied, Planer, Planer-Admin.
+Auf der Startseite erscheinen „Deine nächsten Einsätze“ aus der Terminplanung (`/api/m/planner/upcoming`).
 
 ## Stand
 

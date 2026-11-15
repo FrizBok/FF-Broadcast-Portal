@@ -166,3 +166,12 @@ test('Ziel im Modul (next) wird weitergegeben, auch über die Anmeldung hinweg',
     assert.equal(new URL(x.location).searchParams.get('next'), null);
   }
 });
+
+test('Startseite: „Deine nächsten Einsätze“ – ohne eingerichtete Terminplanung leer', async () => {
+  const owner = client();
+  await owner.post('/api/auth/login', { email: 'chef@example.de', password: PW });
+  const r = await owner.get('/api/m/planner/upcoming');
+  assert.equal(r.status, 200);
+  assert.equal(r.data.enabled, false); // im Testserver ist PLANNER_URL nicht gesetzt
+  assert.equal((await client().get('/api/m/planner/upcoming')).status, 401);
+});
