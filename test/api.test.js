@@ -92,6 +92,13 @@ test('Gast: Einladungslink, kein Zugriff ohne Freigabe, deaktivieren, Ablauf', a
   assert.equal((await owner.put(`/api/users/${guestId}/modules`, { modules: { rundown: 'viewer' } })).status, 200);
   assert.equal((await guest.get('/api/modules')).data[0].my_role, 'viewer');
   assert.equal((await owner.put(`/api/users/${guestId}/modules`, { modules: { gibtsnicht: 'viewer' } })).status, 400);
+  // „Kein Zugang“: Modul, das nicht mehr mitgeschickt wird, wird entzogen
+  let mods = (await owner.put(`/api/users/${guestId}/modules`, { modules: {} })).data.user.modules;
+  assert.deepEqual(mods, {});
+  await owner.put(`/api/users/${guestId}/modules`, { modules: { rundown: 'viewer', overlay: 'operator' } });
+  mods = (await owner.put(`/api/users/${guestId}/modules`, { modules: { overlay: 'operator', rundown: '' } })).data.user.modules;
+  assert.deepEqual(mods, { overlay: 'operator' });
+  await owner.put(`/api/users/${guestId}/modules`, { modules: { rundown: 'viewer' } });
   assert.equal((await owner.put(`/api/users/${guestId}/modules`, { modules: { rundown: 'chef' } })).status, 400);
   // Alles wieder sperren
   assert.equal((await owner.put(`/api/users/${guestId}/modules`, { modules: { rundown: null } })).status, 200);

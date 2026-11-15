@@ -74,10 +74,10 @@ export function setUserModules(userId, wanted) {
     if (!moduleById(id)) throw new Error(`Unbekanntes Modul: ${id}`);
     if (role != null && role !== '' && rank(id, role) < 0) throw new Error(`Ungültige Rolle „${role}“ für Modul ${moduleById(id).name}`);
   }
-  for (const [id, role] of Object.entries(wanted || {})) {
-    if (role == null || role === '') Q.delModule.run(userId, id);
-    else Q.setModule.run(userId, id, role);
-  }
+  // Die Liste ersetzt die bisherigen Rechte vollständig: Module, die fehlen oder leer sind, werden entzogen
+  const keep = new Set(Object.entries(wanted || {}).filter(([, r]) => r != null && r !== '').map(([id]) => id));
+  for (const id of Object.keys(modulesOfUser(userId))) if (!keep.has(id)) Q.delModule.run(userId, id);
+  for (const [id, role] of Object.entries(wanted || {})) if (keep.has(id)) Q.setModule.run(userId, id, role);
 }
 
 /** Beschreibung für die Oberfläche */
