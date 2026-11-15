@@ -179,19 +179,44 @@ async function homePage() {
   const admin = u.role === 'admin';
   const list = h('div');
   const annSlot = h('div');
+  const dutySlot = h('div');
   shell('/', h('div', { class: 'page-head row' }, h('div', null, h('span', { class: 'label' }, 'WILLKOMMEN'), h('h1', null, u.name ? `Hallo ${u.name.split(' ')[0]}` : 'Übersicht'),
     h('p', { class: 'sub' }, 'Deine Module bei FrankenFinals Broadcast.')),
     h('div', { class: 'spacer' }), admin ? h('button', { class: 'btn', onclick: () => announceDialog(() => render()) }, icon('bell'), 'Ankündigung erstellen') : null),
-    annSlot, h('div', { class: 'section-title' }, 'Module'), list);
+    annSlot, dutySlot, h('div', { class: 'section-title' }, 'Module'), list);
   announceBox(admin).then((b) => fill(annSlot, b));
   let mods = [];
   try { mods = await get('/api/modules'); } catch (e) { return fill(list, h('div', { class: 'empty' }, e.message)); }
   S.modules = mods;
+  if (mods.some((m) => m.id === 'planner' && m.available)) nextDuties().then((b) => fill(dutySlot, b));
   if (!mods.length) {
     return fill(list, h('div', { class: 'empty' }, h('b', null, 'Noch keine Module'),
       admin ? 'Weise Benutzern unter „Benutzer“ Module zu.' : 'Dir wurde noch kein Modul freigegeben. Frag einen Admin.'));
   }
   fill(list, h('div', { class: 'mod-grid' }, mods.map((m) => modCard(m))));
+}
+
+/** „Deine nächsten Einsätze“ aus der Terminplanung */
+async function nextDuties() {
+  let d;
+  try { d = await get('/api/m/planner/upcoming'); } catch { return null; }
+  if (!d.enabled || (!d.items.length && !d.to_answer && !d.error)) return null;
+  const day = (iso) => new Date(iso + 'T12:00:00');
+  const rel = (iso) => {
+    const n = Math.round((day(iso) - new Date(new Date().toDateString() + ' 12:00')) / 86400000);
+    return n === 0 ? 'Heute' : n === 1 ? 'Morgen' : n < 7 ? `in ${n} Tagen` : null;
+  };
+  return h('div', { class: 'duty-box' },
+    h('div', { class: 'section-title' }, 'Deine nächsten Einsätze'),
+    d.error ? h('div', { class: 'hint warn' }, d.error) : null,
+    d.items.length ? h('div', { class: 'duty-list' }, d.items.map((x) => h('a', { class: 'duty' + (x.pending ? ' pending' : ''), href: x.href },
+      h('span', { class: 'duty-date' }, h('b', null, day(x.date).getDate()), h('span', null, day(x.date).toLocaleDateString('de-DE', { month: 'short' }).replace('.', ''))),
+      h('span', { class: 'duty-main' }, h('b', null, x.title),
+        h('span', null, [rel(x.date) || day(x.date).toLocaleDateString('de-DE', { weekday: 'long' }), x.meet_time ? `Treffen ${x.meet_time}` : x.start_time ? `${x.start_time} Uhr` : '', x.location].filter(Boolean).join(' · '))),
+      h('span', { class: 'duty-side' }, h('span', { class: 'chip accent' }, x.slots.join(', ')),
+        x.pending ? h('span', { class: 'chip amber' }, 'Bitte bestätigen') : null)))) : null,
+    d.to_answer ? h('a', { class: 'duty-hint', href: d.href }, icon('bell'), `${d.to_answer} ${d.to_answer === 1 ? 'Termin wartet' : 'Termine warten'} auf deine Rückmeldung`, icon('chevronRight')) : null,
+    d.items.length ? h('a', { class: 'duty-all', href: d.mine_href }, 'Alle meine Einsätze', icon('chevronRight')) : null);
 }
 
 function modCard(m, { admin = false } = {}) {
