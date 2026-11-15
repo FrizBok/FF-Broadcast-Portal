@@ -448,6 +448,26 @@ GET('/api/modules', needAuth, (req) => modules
 // Alle Module (für die Rechtevergabe)
 GET('/api/modules/all', needAdmin, () => modules.map((m) => publicManifest(m.manifest)));
 
+// Personen mit Zugriff auf ein Modul – für Module als eigener Dienst (z. B. Terminplanung: Leute einteilen,
+// die das Modul noch nie geöffnet haben). Keine Sitzung, sondern Unterschrift mit dem Modul-Schlüssel (server/sso.js).
+GET('/api/modules/:id/directory', (req) => {
+  const m = moduleById(req.params.id);
+  if (!m || !m.sso || !sso.verifyDirectory(req.headers.authorization, m)) fail(401, 'Ungültige oder fehlende Unterschrift');
+  const now = Date.now();
+  const all = allUserModules();
+  const users = Q.users.all()
+    .filter((u) => u.active && !(u.expires_at && u.expires_at < now))
+    .map((u) => {
+      const own = all.get(u.id) || {};
+      const mods = {};
+      for (const x of modules) { const r = u.role === 'admin' ? x.manifest.roles.at(-1).id : own[x.manifest.id]; if (r) mods[x.manifest.id] = r; }
+      return { u, mods };
+    })
+    .filter((x) => x.mods[m.id])
+    .map(({ u, mods }) => ({ sub: String(u.id), email: u.email, name: u.name || '', role: mods[m.id], kind: u.kind || 'member', platform_admin: u.role === 'admin', modules: mods }));
+  return { module: m.id, users };
+});
+
 /* ================================================================== API: Benutzerverwaltung (Plattform-Admins) */
 /** Plattform-Admins dürfen andere Plattform-Admins nur der Super-Admin ändern */
 function canManage(actor, target) {
@@ -803,13 +823,13 @@ function infoPage(res, status, title, text) {
 <h1>${esc(title)}</h1><p class="ok-box">${esc(text)}</p><div class="links"><a href="/">Zur Übersicht</a></div></div></div></body></html>`);
 }
 
-function openModule(req, res, id) {
+function openModule(req, res, id, next = '') {
   const m = moduleById(id);
   if (!m || !m.sso) return infoPage(res, 404, 'Modul nicht gefunden', 'Dieses Modul gibt es nicht.');
   if (!sso.ssoReady(m)) return infoPage(res, 503, 'Noch nicht eingerichtet', `${m.name} ist noch nicht mit dem Portal verbunden. Ein Admin muss Adresse und Schlüssel in der Server-Konfiguration eintragen.`);
   const user = sessionUser(req)?.user;
   if (!user || user.must_change || (user.must_2fa && !user.totp_enabled)) {
-    res.writeHead(302, { Location: '/?next=' + encodeURIComponent(`/sso/${id}`), 'Cache-Control': 'no-store', ...SEC_HEADERS });
+    res.writeHead(302, { Location: '/?next=' + encodeURIComponent(`/sso/${id}${next ? '?next=' + encodeURIComponent(next) : ''}`), 'Cache-Control': 'no-store', ...SEC_HEADERS });
     return res.end();
   }
   const role = moduleRole(user, id);
@@ -818,7 +838,7 @@ function openModule(req, res, id) {
     return infoPage(res, 403, 'Kein Zugriff', `Für ${m.name} hast du keine Freigabe. Frag einen Admin.`);
   }
   audit.log('module_open', { actor: user, target: id, ip: clientIp(req), detail: { role } });
-  res.writeHead(302, { Location: `${sso.ssoUrl(m)}/auth/portal?ticket=${encodeURIComponent(sso.ticketFor(m, user, role))}`, ...SEC_HEADERS, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+  res.writeHead(302, { Location: `${sso.ssoUrl(m)}/auth/portal?ticket=${encodeURIComponent(sso.ticketFor(m, user, role))}${next ? '&next=' + encodeURIComponent(next) : ''}`, ...SEC_HEADERS, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
   res.end();
 }
 
@@ -834,7 +854,7 @@ const server = http.createServer(async (req, res) => {
     if (!pathname.startsWith('/api/')) {
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Nicht erlaubt' });
       const ssoM = pathname.match(/^\/sso\/([a-z0-9-]+)\/?$/);
-      if (ssoM) return openModule(req, res, ssoM[1]);
+      if (ssoM) return openModule(req, res, ssoM[1], sso.safeNext(url.searchParams.get('next')));
       if (tryStatic(req, res, pathname)) return;
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...SEC_HEADERS });
       return res.end('Nicht gefunden');

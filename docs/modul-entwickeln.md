@@ -48,3 +48,24 @@ export const manifest = { id: 'overlay', …, url: process.env.OVERLAY_URL || ''
   Rolle. Rechte prüft das Modul selbst.
 - Ohne Schlüssel ist die Kachel ein normaler Link auf `url` (Anmeldung im Modul selbst), ohne Adresse zeigt sie „Bald“. Ohne Recht gibt `/sso/<id>` „Kein Zugriff“ zurück; beides
   landet im Protokoll (`module_open`, `module_denied`).
+
+### Bestimmte Seite im Modul öffnen
+
+`/sso/<id>?next=/#/termin/5` öffnet das Modul und gibt `next` an `<url>/auth/portal?ticket=…&next=…` weiter. Erlaubt sind
+nur Pfade derselben Adresse (beginnend mit `/`, nicht `//`, höchstens 300 Zeichen). Muss sich die Person erst anmelden,
+bleibt das Ziel erhalten. Das Modul prüft `next` selbst noch einmal, bevor es weiterleitet.
+
+### Mitgliederliste für ein Modul
+
+Ein Modul mit eigenem Dienst kann die Personen mit Zugriff abfragen (z. B. damit die Terminplanung auch Leute einteilen
+kann, die das Modul noch nie geöffnet haben):
+
+```
+GET /api/modules/<id>/directory
+Authorization: Portal <ts>.<sig>
+```
+
+`ts` = aktuelle Unix-Zeit in Sekunden (±120 s), `sig` = base64url(HMAC-SHA256(`<ID>_SSO_SECRET`, `"directory:<id>:<ts>"`)).
+Antwort: `{ module, users: [{ sub, email, name, role, kind, platform_admin, modules: { <modul>: <rolle> } }] }` – nur aktive,
+nicht abgelaufene Konten mit Zugriff auf dieses Modul (Plattform-Admins immer mit der höchsten Rolle). `sub` ist dieselbe
+ID wie im Ticket.

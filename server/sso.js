@@ -43,6 +43,29 @@ export function verifyTicket(ticket, secret, aud, now = Date.now()) {
   return p;
 }
 
+/** Ziel innerhalb des Moduls nach der Anmeldung (/sso/<modul>?next=/#/termin/5): nur Pfade derselben Adresse */
+export function safeNext(raw) {
+  const v = String(raw || '');
+  return v.length <= 300 && /^\/(?![/\\])[^\s]*$/.test(v) ? v : '';
+}
+
+// Mitgliederliste für ein Modul (Dienst-zu-Dienst, ohne Sitzung):
+// Header „Authorization: Portal <ts>.<sig>“ mit ts = Unix-Sekunden, sig = base64url(HMAC-SHA256(<MODUL>_SSO_SECRET, "directory:<modul>:<ts>")).
+// Gültig ±120 Sekunden.
+export const DIRECTORY_SKEW = 120;
+export function signDirectory(id, secret, ts = Math.floor(Date.now() / 1000)) {
+  return `${ts}.${b64(crypto.createHmac('sha256', secret).update(`directory:${id}:${ts}`).digest())}`;
+}
+export function verifyDirectory(header, m, now = Date.now()) {
+  const secret = ssoSecret(m);
+  if (secret.length < 32) return false;
+  const [ts, sig] = String(header || '').replace(/^Portal\s+/i, '').split('.');
+  if (!/^\d+$/.test(ts || '') || !sig || Math.abs(now / 1000 - Number(ts)) > DIRECTORY_SKEW) return false;
+  const want = crypto.createHmac('sha256', secret).update(`directory:${m.id}:${ts}`).digest();
+  const got = Buffer.from(sig, 'base64url');
+  return got.length === want.length && crypto.timingSafeEqual(got, want);
+}
+
 export function ticketFor(m, user, role) {
   const iat = Math.floor(Date.now() / 1000);
   return signTicket({

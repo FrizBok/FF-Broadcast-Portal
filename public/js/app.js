@@ -284,10 +284,10 @@ async function logout() {
   S.user = null; location.hash = ''; await start();
 }
 
-/** Nach der Anmeldung zurück zum Modul, das sie angefordert hat (/?next=/sso/<modul>) */
+/** Nach der Anmeldung zurück zum Modul, das sie angefordert hat (/?next=/sso/<modul>, optional ?next=<Seite im Modul>) */
 function pendingNext() {
   const n = new URLSearchParams(location.search).get('next') || '';
-  return /^\/sso\/[a-z0-9-]+$/.test(n) ? n : null;
+  return /^\/sso\/[a-z0-9-]+(\?next=[^\s]*)?$/.test(n) ? n : null;
 }
 
 async function start() {
