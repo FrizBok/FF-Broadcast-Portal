@@ -130,3 +130,39 @@ test('OVERLAY_URL ohne https:// oder mit Slash/Pfad wird richtig gelesen', () =>
   assert.equal(normalizeBaseUrl('http://127.0.0.1:3500/login'), 'http://127.0.0.1:3500');
   assert.equal(normalizeBaseUrl(''), '');
 });
+
+test('Mitgliederliste für Module: nur mit gültiger Unterschrift, nur Personen mit Zugriff', async () => {
+  const { signDirectory } = await import('../server/sso.js');
+  const owner = client();
+  await owner.post('/api/auth/login', { email: 'chef@example.de', password: PW });
+  const call = (auth) => fetch(BASE + '/api/modules/overlay/directory', { headers: auth ? { Authorization: auth } : {} }).then(async (r) => ({ status: r.status, data: await r.json() }));
+  assert.equal((await call()).status, 401);
+  assert.equal((await call('Portal ' + signDirectory('overlay', 'z'.repeat(40)))).status, 401);
+  assert.equal((await call('Portal ' + signDirectory('overlay', SECRET, Math.floor(Date.now() / 1000) - 600))).status, 401);
+  assert.equal((await call('Portal ' + signDirectory('rundown', SECRET))).status, 401); // falsches Modul in der Unterschrift
+  const r = await call('Portal ' + signDirectory('overlay', SECRET));
+  assert.equal(r.status, 200);
+  const mails = r.data.users.map((u) => u.email);
+  assert.ok(mails.includes('chef@example.de') && mails.includes('op@example.de'));
+  assert.ok(!mails.includes('ohne@example.de'));
+  const op = r.data.users.find((u) => u.email === 'op@example.de');
+  assert.equal(op.role, 'operator');
+  assert.equal(r.data.users.find((u) => u.email === 'chef@example.de').role, 'admin');
+  // Modul ohne Schlüssel (Rundown) → nie abrufbar
+  const rd = await fetch(BASE + '/api/modules/rundown/directory', { headers: { Authorization: 'Portal ' + signDirectory('rundown', '') } });
+  assert.equal(rd.status, 401);
+});
+
+test('Ziel im Modul (next) wird weitergegeben, auch über die Anmeldung hinweg', async () => {
+  const anon = await client().open('/sso/overlay?next=' + encodeURIComponent('/#/termin/5'));
+  assert.equal(anon.location, '/?next=' + encodeURIComponent('/sso/overlay?next=' + encodeURIComponent('/#/termin/5')));
+  const owner = client();
+  await owner.post('/api/auth/login', { email: 'chef@example.de', password: PW });
+  const r = await owner.open('/sso/overlay?next=' + encodeURIComponent('/#/termin/5'));
+  assert.equal(new URL(r.location).searchParams.get('next'), '/#/termin/5');
+  // fremde Adressen werden verworfen
+  for (const bad of ['//boese.de/x', 'https://boese.de', '/\\boese.de']) {
+    const x = await owner.open('/sso/overlay?next=' + encodeURIComponent(bad));
+    assert.equal(new URL(x.location).searchParams.get('next'), null);
+  }
+});

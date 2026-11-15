@@ -13,5 +13,6 @@ services:
       - APP_URL=
       - SETUP_TOKEN=
       - RUNDOWN_URL=
+      # Schlüssel und weitere Module (OVERLAY_*, PLANNER_*) siehe .env.example
     volumes:
       - ./data:/data

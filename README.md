@@ -34,6 +34,10 @@ Rollen: Operator (live steuern), Editor (gestalten), Overlay-Admin (Verbindungen
 Öffnen über die Kachel (bestehende Konten werden über die E-Mail verknüpft), Gäste aus dem Portal sind dort „extern“.
 Ohne Schlüssel verlinkt die Kachel nur auf `RUNDOWN_URL`.
 
+**Terminplanung** (eigener Dienst, Repo [FrizBok/FF-Planner](https://github.com/FrizBok/FF-Planner)): Im Portal `PLANNER_URL` und
+`PLANNER_SSO_SECRET` setzen, in der Terminplanung `PORTAL_URL` und denselben Schlüssel als `PORTAL_SSO_SECRET`. Mit demselben Schlüssel
+holt sie die Liste der Personen mit Zugriff (`/api/modules/planner/directory`). Rollen: Mitglied, Planer, Planer-Admin.
+
 ## Stand
 
 Gerüst mit Oberfläche und API. Noch offen: FF Rundown als echtes Modul (bis dahin verlinkt `RUNDOWN_URL` auf die bestehende Installation).
